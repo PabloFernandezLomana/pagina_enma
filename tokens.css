@@ -1,0 +1,53 @@
+/* tokens.css - Sistema unificado de diseño para ModaEnma (Tienda) y ModaInma (Panel) */
+:root {
+  /* Marca & Identidad Boutique */
+  --brand-crema: #FAF8F5;
+  --brand-crema-dark: #F3EFEA;
+  --brand-sand: #EAE3D9;
+  --brand-terracotta: #C85A32;
+  --brand-terracotta-dark: #A9431E;
+  --brand-terracotta-light: #F9EBE6;
+
+  /* Colores funcionales del Panel Stitch */
+  --panel-pink-pastel: #F4C2C2;
+  --panel-pink-soft: #FDECEC;
+  --panel-pink-dark: #8C3A4A;
+  --panel-olive: #B2AC88;
+  --panel-olive-dark: #5C583E;
+  --panel-blue-soft: #A2C2E1;
+  --panel-blue-dark: #2F567F;
+
+  /* Tintes por categoría de la Tienda (accesibles contraste AA) */
+  --tint-mujer: #FDE8EC;
+  --tint-hombre: #E8EEF5;
+  --tint-ninos: #FFF7DF;
+  --tint-deporte: #EFF3E6;
+  --tint-accesorios: #FBECE5;
+
+  /* Neutros compartidos */
+  --color-dark: #2D2926;
+  --color-muted: #7A726A;
+  --color-border: #E5DFD7;
+  --color-surface: #FFFFFF;
+  --color-surface-soft: #FDFCFB;
+
+  /* Estados */
+  --state-success: #2E7D32;
+  --state-warning: #C98A2C;
+  --state-danger: #D9534F;
+  --state-info: #2196F3;
+
+  /* Tipografías */
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+
+  /* Radios & Sombras */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
+  --shadow-subtle: 0 2px 8px rgba(45, 41, 38, 0.05);
+  --shadow-card: 0 4px 16px rgba(45, 41, 38, 0.08);
+}
+

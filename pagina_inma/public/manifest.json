@@ -1,0 +1,16 @@
+{
+  "short_name": "ModaInma",
+  "name": "ModaInma Boutique - Gestión Privada",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#FAF8F5",
+  "theme_color": "#FAF8F5",
+  "display": "standalone",
+  "orientation": "portrait"
+}

@@ -1,0 +1,52 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Regla de verificación de administrador
+    function isAdmin() {
+      return request.auth != null && (request.auth.token.role == 'admin' || request.auth.token.admin == true);
+    }
+
+    // Catálogo de Productos
+    // Lectura pública permitida únicamente para productos activos
+    // Modificación y borrado restringidos exclusivamente a administradores
+    match /products/{productId} {
+      allow read: if resource == null || resource.data.active == true || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // Pedidos
+    // Denegada cualquier escritura directa desde el navegador para clientes anónimos
+    // Todo pedido web se crea en servidor vía Firebase Admin SDK
+    // Administradores autenticados pueden leer y actualizar estados en el panel
+    match /orders/{orderId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Clientes y Facturas (CRM)
+    // Información sensible protegida bajo perfil administrativo
+    match /clients/{clientId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /invoices/{invoiceId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Plantillas y Tareas del panel
+    match /templates/{templateId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /tasks/{taskId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Ajustes de Tienda
+    match /settings/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}
+
