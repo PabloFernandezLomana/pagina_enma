@@ -1,78 +1,33 @@
-import Link from 'next/link';
-import ProductCard from '@/components/ui/ProductCard';
-import CategoryFilterBar from '@/components/ui/CategoryFilterBar';
-import ScrollReveal from '@/components/animations/ScrollReveal';
-import { getProducts, getCategoryInfo } from '@/lib/productService';
+// moda-enma-tienda/src/app/[category]/page.js
+import { notFound } from 'next/navigation';
+import { getProducts } from '@/lib/catalog.server';
+import { DEPARTMENTS, getDepartment } from '@/lib/categories';
+import LiveGrid from '@/components/ui/LiveGrid';
 
-export default async function CategoryPage({ params, searchParams }) {
-  const categoryId = params.category;
-  const categoryInfo = getCategoryInfo(categoryId) || {
-    name: categoryId.toUpperCase(),
-    desc: 'Catálogo exclusivo de moda y complementos.'
-  };
+export const dynamic = 'force-dynamic';
 
-  const selectedSize = searchParams?.size || 'todos';
-  const sort = searchParams?.sort || 'default';
+export function generateMetadata({ params }) {
+  const d = getDepartment(params.category);
+  return d ? { title: d.name, description: d.desc, alternates: { canonical: `/${d.id}` } } : {};
+}
 
-  let products = await getProducts({ category: categoryId });
-
-  // Size Filter
-  if (selectedSize && selectedSize !== 'todos') {
-    products = products.filter(p => 
-      p.variants && p.variants.some(v => v.size.toLowerCase() === selectedSize.toLowerCase() && v.stock > 0)
-    );
-  }
-
-  // Sorting
-  if (sort === 'price-asc') {
-    products.sort((a, b) => a.salePrice - b.salePrice);
-  } else if (sort === 'price-desc') {
-    products.sort((a, b) => b.salePrice - a.salePrice);
-  }
+export default async function DepartmentPage({ params }) {
+  const dep = getDepartment(params.category);
+  if (!dep) notFound();
+  const products = await getProducts({ department: dep.id });
 
   return (
-    <div className="min-h-screen bg-warm-bg text-warm-dark pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-      
-      {/* Category Header */}
-      <div className="border-b border-warm-border pb-8 mb-10 space-y-3">
-        <div className="flex items-center gap-2 text-[11px] font-bold tracking-editorial uppercase text-warm-muted">
-          <Link href="/" className="hover:text-warm-dark transition-colors">Inicio</Link>
-          <span>/</span>
-          <span className="text-warm-dark font-bold">{categoryInfo.name}</span>
+    <>
+      <section style={{ backgroundColor: `rgb(var(--c-${dep.tint}))` }}>
+        <div className="wrap py-12 sm:py-16">
+          <nav aria-label="Migas de pan" className="text-[13px] font-medium text-ink/70"><a href="/" className="link-draw">Inicio</a> / {dep.name}</nav>
+          <h1 className="h-display mt-3 text-[clamp(48px,8vw,104px)]">{dep.name}</h1>
+          <p className="mt-3 max-w-[50ch] text-[17px] text-ink/80">{dep.desc} <span className="font-semibold">{products.length} {products.length === 1 ? 'artículo' : 'artículos'}.</span></p>
         </div>
-
-        <h1 className="font-display text-4xl sm:text-6xl font-light uppercase tracking-tight text-warm-dark">
-          {categoryInfo.name}
-        </h1>
-        <p className="text-xs sm:text-sm text-warm-muted font-light max-w-2xl leading-relaxed">
-          {categoryInfo.desc}
-        </p>
-      </div>
-
-      {/* Filter Bar Client Component */}
-      <CategoryFilterBar currentCategory={categoryId} />
-
-      {/* Products Grid (Zara/Mango: 2 columnas en móvil, 4 en desktop) */}
-      {products.length === 0 ? (
-        <div className="text-center py-24 bg-warm-card border border-warm-border rounded-sm space-y-4">
-          <p className="text-base text-warm-muted">
-            No se encontraron prendas para los filtros seleccionados en {categoryInfo.name}.
-          </p>
-          <Link
-            href={`/${categoryId}`}
-            className="inline-block px-6 py-2.5 bg-brand-terracotta text-white text-xs font-bold tracking-editorial uppercase rounded-xs hover:bg-brand-terracottaDark transition-colors shadow-sm"
-          >
-            Restablecer Filtros
-          </Link>
-        </div>
-      ) : (
-        <ScrollReveal stagger={0.06} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
-          {products.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </ScrollReveal>
-      )}
-
-    </div>
+      </section>
+      <section className="wrap py-10 sm:py-14">
+        <LiveGrid initial={products} department={dep.id} emptyText={`Pronto habrá novedades en ${dep.name}.`} />
+      </section>
+    </>
   );
 }

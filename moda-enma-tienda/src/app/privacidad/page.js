@@ -1,58 +1,36 @@
-import Link from 'next/link';
+// moda-enma-tienda/src/app/privacidad/page.js
+import LegalPage, { H, P, UL, owner } from '@/components/legal/LegalPage';
 import { SITE_CONFIG } from '@/site.config';
 
-export const metadata = {
-  title: 'Política de Privacidad | ModaEnma',
-  description: 'Información sobre el tratamiento de datos personales conforme al RGPD.'
-};
+export const metadata = { title: 'Política de privacidad' };
 
-export default function PrivacidadPage() {
+export default function Page() {
+  const o = owner();
   return (
-    <div className="min-h-screen bg-warm-bg text-warm-dark pt-32 pb-24 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto space-y-8">
-      <div className="border-b border-warm-border pb-6">
-        <span className="text-editorial-sub">RGPD & PROTECCIÓN DE DATOS</span>
-        <h1 className="font-display text-3xl sm:text-4xl font-light uppercase tracking-tight mt-1">
-          Política de Privacidad
-        </h1>
-        <p className="text-xs text-warm-muted mt-2">Conforme al Reglamento General de Protección de Datos (UE) 2016/679</p>
-      </div>
-
-      <div className="prose prose-stone text-xs sm:text-sm text-warm-muted space-y-6 leading-relaxed">
-        <section className="space-y-2">
-          <h2 className="text-base font-bold text-warm-dark uppercase tracking-editorial">1. Responsable del Tratamiento</h2>
-          <p>
-            El responsable del tratamiento de los datos recogidos en este sitio web es <strong>{SITE_CONFIG.brand.legalName}</strong> con NIF <strong>{SITE_CONFIG.brand.nif}</strong> y dirección de contacto <strong>{SITE_CONFIG.brand.email}</strong>. [REVISAR CON GESTOR]
-          </p>
-        </section>
-
-        <section className="space-y-2">
-          <h2 className="text-base font-bold text-warm-dark uppercase tracking-editorial">2. Finalidad del Tratamiento</h2>
-          <p>
-            Los datos personales proporcionados por los clientes (nombre, teléfono, email, dirección de entrega) son tratados con la exclusiva finalidad de gestionar los pedidos tramitados, coordinar la entrega o recogida local en Málaga y mantener la comunicación informativa relativa a sus compras.
-          </p>
-        </section>
-
-        <section className="space-y-2">
-          <h2 className="text-base font-bold text-warm-dark uppercase tracking-editorial">3. Destinatarios de los Datos</h2>
-          <p>
-            Los datos no se cederán a terceros ajenos salvo obligación legal o a proveedores de servicio indispensables para la prestación del servicio: pasarela de pago (PayPal) y servicios de infraestructura cloud (Google Cloud / Firebase).
-          </p>
-        </section>
-
-        <section className="space-y-2">
-          <h2 className="text-base font-bold text-warm-dark uppercase tracking-editorial">4. Derechos del Interesado</h2>
-          <p>
-            Usted puede ejercitar en cualquier momento sus derechos de acceso, rectificación, supresión, limitación y oposición remitiendo una comunicación por escrito al correo <strong>{SITE_CONFIG.brand.email}</strong>, así como presentar una reclamación ante la Agencia Española de Protección de Datos (AEPD).
-          </p>
-        </section>
-      </div>
-
-      <div className="pt-6 border-t border-warm-border">
-        <Link href="/" className="text-xs font-bold tracking-editorial uppercase text-brand-terracotta hover:underline">
-          ← Volver a la Tienda
-        </Link>
-      </div>
-    </div>
+    <LegalPage title="Política de privacidad" intro="Cómo tratamos tus datos personales, conforme al Reglamento (UE) 2016/679 (RGPD) y a la LOPDGDD 3/2018.">
+      <H>1. Responsable</H>
+      <P>Responsable del tratamiento: {o.name}, NIF {o.nif}, domicilio {o.address}. Contacto para cualquier cuestión de privacidad: {o.email}.</P>
+      <H>2. Qué datos recogemos y para qué</H>
+      <UL>
+        <li><strong>Datos del pedido</strong> (nombre, correo, teléfono, dirección si pides envío, comentarios y artículos comprados): para gestionar tu compra, prepararla, enviarla o quedar contigo, y avisarte sobre su estado.</li>
+        <li><strong>Datos de facturación y contabilidad</strong>: para cumplir nuestras obligaciones legales y fiscales.</li>
+        <li><strong>Visitas a productos</strong>: contamos cuántas veces se ve cada prenda, de forma anónima y agregada, sin identificarte.</li>
+      </UL>
+      <H>3. Base jurídica</H>
+      <P>La ejecución del contrato de compraventa que realizas con nosotros (art. 6.1.b RGPD) y el cumplimiento de obligaciones legales (art. 6.1.c). No tomamos decisiones automatizadas ni te enviamos publicidad sin tu consentimiento.</P>
+      <H>4. Cuánto tiempo los conservamos</H>
+      <P>Mientras sea necesario para gestionar el pedido y, después, bloqueados durante los plazos legales de prescripción (con carácter general, hasta 6 años por obligaciones mercantiles y fiscales).</P>
+      <H>5. Con quién los compartimos</H>
+      <UL>
+        <li><strong>PayPal</strong>, si eliges pagar con PayPal. Gestiona el pago con su propia política de privacidad; nosotros no recibimos los datos de tu cuenta ni de tu tarjeta.</li>
+        <li><strong>Google Firebase</strong> (alojamiento y base de datos), como encargado del tratamiento, con las garantías contractuales del RGPD.</li>
+        <li><strong>Servicio de mensajería</strong>, solo si pides envío a domicilio, con los datos imprescindibles para entregarlo.</li>
+      </UL>
+      <P>No vendemos tus datos ni los cedemos a terceros con fines comerciales.</P>
+      <H>6. Tus derechos</H>
+      <P>Puedes acceder a tus datos, rectificarlos, suprimirlos, oponerte, limitar su tratamiento y pedir su portabilidad escribiendo a {o.email} e indicando el derecho que ejerces. Si crees que no tratamos bien tus datos, puedes reclamar ante la Agencia Española de Protección de Datos (www.aepd.es).</P>
+      <H>7. Menores</H>
+      <P>Las compras en {SITE_CONFIG.brand.name} deben hacerlas personas mayores de edad.</P>
+    </LegalPage>
   );
 }
-

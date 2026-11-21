@@ -1,45 +1,69 @@
-# LANZAMIENTO.md — Seguimiento y Checklist de Producción
+# LANZAMIENTO — ModaEnma (tienda) + Panel de gestión
 
-**Fecha**: 20 de Noviembre de 2026  
-**Fecha Objetivo de Lanzamiento**: 24-25 de Noviembre de 2026  
-**Días Restantes**: ~4 días  
-**Estado Actual**: **Fases 0, 1, 2, 3 y 4 Completadas con Éxito** | **Fase 5 (SEO y Rendimiento) y Fase 6 (QA) listas para validación**
+Documento honesto: qué está hecho, qué está **comprobado** y qué falta por tu parte.
 
----
+## 1. Qué hay
 
-## 1. Resumen de Estado por Fases (Regla de 5 Líneas)
-- **Hecho (Fases 0 a 4)**: 
-  1. Tienda y panel sincronizados con Firestore; catálogo depurado sin erratas ni métricas ficticias.
-  2. Pedidos seguros creados exclusivamente en servidor con recálculo de precios, validación de stock y pasarela PayPal + Pago en mano (Málaga).
-  3. Visor 3D retirado a petición del usuario para optimizar la velocidad móvil; catálogo en 2 columnas móvil / 4 desktop, sticky buy bar y drawer con barra de envío gratis.
-  4. Panel de gestión con chips "Web" / "Cobrar en mano", botón "Marcar como cobrado", cancelación con devolución de stock y facturación sin IVA desglosado.
-  5. Pie de página unificado y páginas legales creadas (`/terminos-y-condiciones`, `/aviso-legal`, `/privacidad`, `/cookies`). Compilación limpia: Next.js (16/16 páginas OK) y Vite (0 errores).
-- **Pendiente (Fases 5 y 6)**: Pruebas con credenciales reales de PayPal Sandbox/Live por parte del usuario, carga del catálogo real y despliegue final en Firebase Hosting.
-- **Riesgos y Bloqueos**: Esperando que el usuario aporte los datos marcados como `TODO-LANZAMIENTO` (Razón Social, NIF, WhatsApp y credenciales de PayPal).
+| Pieza | Carpeta | Tecnología | Dónde se publica |
+|---|---|---|---|
+| Tienda pública | `moda-enma-tienda/` | Next.js 14 | Firebase App Hosting (plan Blaze) |
+| Panel privado | `pagina_inma/` | React 19 + Vite (PWA) | Firebase Hosting |
+| Datos | Firestore + Storage + Auth | mismo proyecto Firebase | — |
 
----
+**Fuente única de configuración:** `site.config.js` y `tokens.css` (raíz). Tras editarlos ejecuta `node scripts/sync-shared.mjs` para copiarlos a la tienda y al panel.
 
-## 2. Checklist de Pruebas Obligatorias (§9.2)
+## 2. Reglas de negocio implementadas
+- Pago: **solo PayPal o pago en mano**.
+- Envío a domicilio: 3,90 € (siempre), **solo con PayPal**. Sin envío gratis.
+- Quedar en persona (Málaga): sin coste, pago en mano o PayPal. No hay tienda física ni recogida.
+- Precios con IVA incluido; las facturas **no desglosan IVA** (`invoices.showVatBreakdown: false` en `site.config.js`).
+- El precio de compra (coste) vive en `products_private`: **nunca** es público.
 
-| # | Prueba Obligatoria | Estado | Notas |
-|---|---|:---:|---|
-| 1 | Compra completa con PayPal sandbox | ⏳ | Endpoints `/api/paypal/*` listos |
-| 2 | Compra con pago en mano dentro y fuera de Málaga | ✅ | Validado por CP en `/api/orders/create` |
-| 3 | Dos compradores simultáneos sobre la última unidad de stock | ✅ | Transacción atómica en backend |
-| 4 | Cancelar pedido en panel restituye stock de talla | ✅ | Validado en `storageService.js` y `PedidosView.jsx` |
-| 5 | Crear/editar prenda desde panel móvil se refleja en tienda | ✅ | `storageService` sincronizado con Firestore |
-| 6 | Panel muestra pedidos web en tiempo real con chips de pago | ✅ | Etiquetas "WEB", "Cobrar en mano", "PayPal" |
-| 7 | Reglas de Firestore: usuario anónimo no puede escribir | ✅ | `firestore.rules` deniega escrituras no-admin |
-| 8 | Todos los enlaces de pie, legales y redes funcionan sin 404 | ✅ | `/terminos-y-condiciones`, `/aviso-legal`, `/privacidad`, `/cookies` |
-| 9 | Prueba en móvil real (iPhone / Android) | ⏳ | Estilos táctiles y 2 columnas listos |
-| 10 | Lighthouse móvil: Rendimiento ≥ 85, Accesibilidad ≥ 95 | ✅ | Optimizado al retirar 3D y habilitar carga prioritaria |
-| 11 | Copia de seguridad JSON previa a la purga de demo | ✅ | Script disponible en `scripts/backup-and-purge.js` |
+## 3. Estado verificado (en mi entorno, sin Firebase real)
+- ✅ Tienda compila (`next build`) y se ve bien en escritorio y móvil con el catálogo de prueba.
+- ✅ Panel compila (`vite build`) y probado de punta a punta en modo demo: subir producto con foto, editar tallas/stock, cambiar estado de pedido, venta manual con descuento de stock, factura PDF.
+- ✅ API de pedidos: valida datos, rechaza envío sin dirección, rechaza PayPal si no está configurado, `/api/products` (insegura) eliminada, 404 reales.
+- ⚠️ **NO probado contra Firestore real ni PayPal real**: no tengo acceso a tu proyecto ni pude arrancar el emulador (red bloqueada). La lógica de transacciones, las reglas y el flujo PayPal están escritos siguiendo la documentación, pero **tienes que hacer las pruebas del apartado 6 en PayPal Sandbox antes de cobrar nada real**.
 
----
+## 4. Puesta en marcha (una sola vez)
 
-## 3. Lista de Pendientes para el Usuario (`TODO-LANZAMIENTO`)
-1. **Datos Legales**: Razón Social o Nombre de Autónomo, NIF/CIF y Domicilio en Málaga (revisar con gestor los textos legales en `/terminos-y-condiciones`).
-2. **Credenciales PayPal**: Client ID y Secret en `moda-enma-tienda/.env`.
-3. **Redes Sociales**: URL de Instagram y número de WhatsApp comercial en `site.config.js`.
-4. **Horarios y Dirección de Recogida en Boutique** en `site.config.js`.
-5. **Carga de Prendas Reales**: Fotografías y precios definitivos desde el panel ModaInma Management.
+1. **Firebase**: crea un proyecto en console.firebase.google.com. Activa Firestore (modo producción), Storage y Authentication (correo/contraseña). Pasa a plan **Blaze** (necesario para App Hosting; con tu tráfico el coste suele ser ~0 €).
+2. **Cuenta del panel**: Authentication → Usuarios → Añadir usuario (tu correo y contraseña).
+3. **`.firebaserc`**: sustituye `REEMPLAZA-CON-TU-PROJECT-ID` por el ID de tu proyecto.
+4. **Reglas**: `npm i -g firebase-tools`, `firebase login`, y desde la raíz: `firebase deploy --only firestore:rules,storage`.
+5. **Administrador**: descarga una clave de cuenta de servicio (Configuración → Cuentas de servicio), guárdala fuera del repo y en `moda-enma-tienda/.env.local` pon `FIREBASE_SERVICE_ACCOUNT_KEY=` con su contenido (en una línea o en base64). Luego, en `moda-enma-tienda/`: `npm run set-admin -- tucorreo@ejemplo.com`. Cierra sesión y entra de nuevo en el panel.
+6. **Productos de prueba**: `npm run seed-demo` (en `moda-enma-tienda/`). Se borran desde el panel (Ajustes → Borrar productos de prueba) o con `npm run purge-demo`.
+7. **Panel**: copia `pagina_inma/.env.example` a `.env`, rellena las 6 claves de Firebase (app web) y ejecuta `npm run build` y, desde la raíz, `firebase deploy --only hosting`.
+8. **Tienda**: rellena `moda-enma-tienda/apphosting.yaml` (claves Firebase públicas y dominio) y crea los secretos de PayPal (`firebase apphosting:secrets:set PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`). Conecta el repo de GitHub en Firebase → App Hosting y elige la carpeta `moda-enma-tienda`.
+9. **Dominio**: cuando lo tengas, ponlo en `site.config.js` (`brand.domain`), ejecuta `node scripts/sync-shared.mjs` y añádelo en App Hosting.
+
+## 5. PayPal (cuando crees la cuenta Business)
+1. developer.paypal.com → Apps & Credentials → crea una app (primero **Sandbox**) → copia Client ID y Secret.
+2. Pon `PAYPAL_ENV=sandbox` y las credenciales (secretos de App Hosting o `.env.local`).
+3. Webhooks → añade `https://TU-DOMINIO/api/paypal/webhook` con los eventos `PAYMENT.CAPTURE.COMPLETED`, `DENIED`, `REFUNDED` y `REVERSED`. Copia el *Webhook ID* a `PAYPAL_WEBHOOK_ID`.
+4. Cuando todo funcione en sandbox: `PAYPAL_ENV=live` con las credenciales **live**.
+
+Cómo funciona: al confirmar, el servidor crea el pedido y **reserva el stock** en una transacción; PayPal cobra; el servidor captura el pago y solo entonces lo marca pagado (comprueba importe exacto y moneda). Si el cliente abandona, se libera el stock; si se cierra el navegador a medias, puedes cancelarlo desde el panel.
+
+## 6. Pruebas que debes hacer antes de abrir al público
+- [ ] Compra de prueba con PayPal **Sandbox**: aparece en el panel como "PayPal · pagado" y el stock baja.
+- [ ] Abandonar el pago de PayPal: el pedido no queda como pagado y el stock se libera.
+- [ ] Compra "quedar en persona + pago en mano": entra en el panel como "Cobrar en mano".
+- [ ] Dos personas compran la última unidad a la vez: solo una lo consigue.
+- [ ] Cancelar un pedido en el panel devuelve el stock a la tienda.
+- [ ] Subir un producto con 3 fotos desde el móvil: se ve en la tienda sin recargar el panel.
+- [ ] Crear una factura y abrir el PDF.
+- [ ] Desde un navegador sin sesión, `firestore` no deja leer `orders`, `clients` ni `products_private`.
+
+## 7. Pendiente de tus datos (la web no inventa nada)
+Todo se rellena en `site.config.js`; lo vacío simplemente no se muestra:
+- Nombre/razón social, NIF, dirección, correo y teléfono/WhatsApp.
+- Instagram, TikTok, Facebook (los botones del pie aparecen solos al poner la URL).
+- Dominio.
+- Fotos y productos reales.
+
+## 8. Importante (legal, no técnico)
+- Los textos legales (términos, privacidad, cookies, aviso legal, envíos y devoluciones) son una **base razonable, no asesoramiento jurídico**. Que los revise tu gestor/a o un abogado/a.
+- Vender de forma habitual a través de una web requiere identificarte como titular (nombre, NIF, domicilio) y, normalmente, el alta como autónomo/a. Hasta rellenar esos datos, las páginas legales mostrarán campos pendientes: **no abras ventas reales sin completarlos**.
+- Las facturas sin desglose de IVA deben validarse con tu gestor/a.
+- Los precios de tienda incluyen IVA; el derecho de desistimiento es de 14 días.

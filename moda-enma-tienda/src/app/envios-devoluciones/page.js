@@ -1,50 +1,33 @@
-import { Truck, RotateCcw, ShieldCheck } from 'lucide-react';
+// moda-enma-tienda/src/app/envios-devoluciones/page.js
+import Link from 'next/link';
+import LegalPage, { H, P, UL, owner } from '@/components/legal/LegalPage';
+import { SITE_CONFIG } from '@/site.config';
+import { eur } from '@/lib/format';
 
-export default function ShippingReturnsPage() {
+export const metadata = { title: 'Envíos y devoluciones' };
+
+export default function Page() {
+  const o = owner();
+  const { delivery, meetup } = SITE_CONFIG.shipping.methods;
+  const days = SITE_CONFIG.legal.withdrawalDays;
   return (
-    <div className="min-h-screen bg-warm-bg text-warm-dark pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto space-y-16">
-      <div className="text-center space-y-4">
-        <span className="text-editorial-sub">POLÍTICA DE SERVICIO</span>
-        <h1 className="font-display text-4xl sm:text-6xl font-light uppercase tracking-tight text-warm-dark">
-          Envíos & Devoluciones
-        </h1>
-        <p className="text-xs sm:text-sm text-warm-muted font-light max-w-xl mx-auto leading-relaxed">
-          Garantizamos entregas rápidas y un proceso de devolución sencillo para que compres con total tranquilidad.
-        </p>
-      </div>
-
-      <div className="space-y-8 text-xs text-warm-muted font-light leading-relaxed">
-        <div className="bg-warm-card border border-warm-border p-6 rounded-xs space-y-3 shadow-xs">
-          <div className="flex items-center gap-3 text-warm-dark">
-            <Truck size={20} className="text-brand-terracotta" />
-            <h2 className="text-sm font-bold tracking-editorial uppercase">1. Tarifas y Plazos de Envío</h2>
-          </div>
-          <p>
-            • <strong className="text-warm-dark">España Peninsular y Portugal:</strong> Envío Estándar 24h/48h laboral. Gratuito para pedidos superiores a 90,00 €. Para pedidos inferiores a 90,00 €, los gastos de envío son de 4,90 €.<br />
-            • <strong className="text-warm-dark">Islas Baleares y Canarias:</strong> Entrega en 3-5 días laborables. Gastos de envío calculados en checkout.
-          </p>
-        </div>
-
-        <div className="bg-warm-card border border-warm-border p-6 rounded-xs space-y-3 shadow-xs">
-          <div className="flex items-center gap-3 text-warm-dark">
-            <RotateCcw size={20} className="text-brand-terracotta" />
-            <h2 className="text-sm font-bold tracking-editorial uppercase">2. Devoluciones y Cambios de Talla</h2>
-          </div>
-          <p>
-            Dispones de <strong className="text-warm-dark">30 días naturales</strong> desde la recepción de tu pedido para solicitar un cambio de talla o devolución. Las prendas deben mantener sus etiquetas originales intactas y no presentar signos de uso.
-          </p>
-        </div>
-
-        <div className="bg-warm-card border border-warm-border p-6 rounded-xs space-y-3 shadow-xs">
-          <div className="flex items-center gap-3 text-warm-dark">
-            <ShieldCheck size={20} className="text-brand-terracotta" />
-            <h2 className="text-sm font-bold tracking-editorial uppercase">3. Sincronización en Tiempo Real</h2>
-          </div>
-          <p>
-            Todos los pedidos realizados en ModaEnma entran directamente en la cola de procesamiento de la boutique <strong className="text-warm-dark">ModaInma Management</strong>, garantizando que el stock se descuente de forma inmediata y que recibas el número de seguimiento por SMS / email.
-          </p>
-        </div>
-      </div>
-    </div>
+    <LegalPage title="Envíos y devoluciones" intro="Lo que necesitas saber antes y después de comprar.">
+      <H>Cómo recibes tu pedido</H>
+      <UL>
+        {delivery.enabled && <li><strong>{delivery.label}:</strong> {eur(delivery.cost)} por pedido, a {SITE_CONFIG.shipping.shipsTo}. Llega en 2-4 días laborables desde que confirmamos el pago. Pagas con PayPal.</li>}
+        {meetup.enabled && <li><strong>{meetup.label}:</strong> sin coste. Te escribimos para acordar lugar y hora. Pagas en mano o con PayPal.</li>}
+      </UL>
+      <P>Aún no hay envío gratis: el coste es el mismo para cualquier importe.</P>
+      <H>Cómo pagas</H>
+      <P>Con PayPal o en mano (solo si quedamos en persona). No aceptamos otros medios de pago.</P>
+      <H>Cómo devolver</H>
+      <UL>
+        <li>Tienes {days} días naturales desde que lo recibes para desistir.</li>
+        <li>Escríbenos a {o.email} con tu número de pedido.</li>
+        <li>Devuelve la prenda sin usar y con etiquetas. El coste de devolución es tuyo.</li>
+        <li>Te reembolsamos por el mismo medio de pago en un máximo de {days} días desde que recibimos la devolución.</li>
+      </UL>
+      <P>El detalle completo está en los <Link className="underline underline-offset-2" href="/terminos-y-condiciones">términos y condiciones</Link>.</P>
+    </LegalPage>
   );
 }

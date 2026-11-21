@@ -1,5 +1,7 @@
 # DESIGN.md — Sistema de Diseño ModaEnma & ModaInma
 
+> Fuente de verdad de colores y medidas: `tokens.css` (raíz). Los valores hex de este documento son orientativos; si difieren, manda `tokens.css`.
+
 ## 1. Filosofía de Marca: "Boutique Cálida de Málaga"
 Frente a las rejillas impersonales y sobredimensionadas de las macrotiendas, ModaEnma respira calma, espacio blanco editorial y luz mediterránea:
 - Una sola idea clara por pantalla.

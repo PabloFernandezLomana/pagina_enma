@@ -1,56 +1,94 @@
-// site.config.js - Configuración centralizada de ModaEnma / ModaInma
-// Todos los textos, políticas, datos de contacto y condiciones leen de aquí.
-// Los datos pendientes marcados con TODO-LANZAMIENTO requieren confirmación del usuario.
+// site.config.js — FUENTE ÚNICA DE VERDAD (raíz del repo)
+// Tras editar este archivo ejecuta:  node scripts/sync-shared.mjs
+// (copia este archivo y tokens.css a la tienda y al panel).
+//
+// Los datos que dejes vacíos ("") NO se inventan: la web simplemente no muestra
+// ese dato (botón de Instagram, teléfono, etc.). Los textos legales sí necesitan
+// titular, NIF y dirección antes de vender de verdad (ver LANZAMIENTO.md).
 
 export const SITE_CONFIG = {
   brand: {
-    name: "ModaEnma",
-    legalName: "TODO-LANZAMIENTO: Razón Social o Nombre Autónomo",
-    nif: "TODO-LANZAMIENTO: NIF/CIF",
-    tagline: "Boutique cálida de moda y estilo de vida en Málaga",
-    description: "Ropa pensada para el día a día, colecciones seleccionadas con mimo y artículos exclusivos.",
-    city: "Málaga",
-    country: "España",
-    address: "TODO-LANZAMIENTO: Dirección física de la boutique en Málaga",
-    phone: "TODO-LANZAMIENTO: Teléfono de atención al cliente",
-    whatsapp: "TODO-LANZAMIENTO: Número de WhatsApp comercial",
-    email: "TODO-LANZAMIENTO: Correo de contacto comercial",
+    name: 'ModaEnma',
+    tagline: 'Moda cercana desde Málaga',
+    description:
+      'Ropa, deporte y accesorios elegidos con mimo. Compra online y recibe en casa o quedamos en Málaga.',
+    city: 'Málaga',
+    country: 'España',
+    domain: '', // p. ej. 'https://modaenma.es' (sin barra final). Se usa para SEO y enlaces absolutos.
+    legalName: '', // Nombre y apellidos o razón social del titular
+    nif: '',
+    address: '',
+    phone: '',
+    whatsapp: '', // solo dígitos con prefijo, p. ej. '34600111222'
+    email: '',
   },
 
   social: {
-    instagram: "TODO-LANZAMIENTO: https://instagram.com/...",
-    tiktok: "", // Dejar vacío si no se usa; el botón no se mostrará
-    facebook: "", // Dejar vacío si no se usa
-    whatsappLink: "TODO-LANZAMIENTO: https://wa.me/34XXXXXXXXX"
+    instagram: '', // URL completa, p. ej. 'https://instagram.com/modaenma'
+    tiktok: '',
+    facebook: '',
   },
 
   shipping: {
-    scope: "Málaga Capital y alrededores seleccionados",
-    localDeliveryCost: 4.90, // En euros por pedido
-    freeShippingThreshold: 999999, // Sin envíos gratuitos (siempre aplica coste de reparto)
-    allowStorePickup: false, // Solo venta y entrega online directa
-    pickupAddress: "",
-    pickupSchedule: "",
-    postalCodesAllowedForCash: [
-      "29001", "29002", "29003", "29004", "29005", "29006", "29007", "29008", 
-      "29009", "29010", "29011", "29012", "29013", "29014", "29015", "29016", 
-      "29017", "29018"
-    ]
+    currency: 'EUR',
+    // Un único coste de envío; no hay envío gratis (déjalo en null).
+    freeShippingThreshold: null,
+    methods: {
+      delivery: {
+        enabled: true,
+        label: 'Envío a domicilio',
+        description: 'Recíbelo en casa en 2-4 días laborables.',
+        cost: 3.9,
+        payments: ['paypal'], // el envío solo se paga por PayPal
+      },
+      meetup: {
+        enabled: true,
+        label: 'Quedar en persona (Málaga)',
+        description: 'Quedamos en Málaga y pagas en mano o por PayPal.',
+        cost: 0,
+        payments: ['cash', 'paypal'],
+      },
+    },
+    shipsTo: 'España peninsular',
   },
 
   payments: {
-    allowedMethods: ['paypal', 'cash'],
-    cashOnDeliveryName: "Pago en mano (Recogida o Entrega en Málaga)",
-    paypalEnabled: true,
-    cashEnabled: true
+    // Los dos únicos métodos del proyecto.
+    labels: { paypal: 'PayPal', cash: 'Pago en mano' },
   },
 
   legal: {
-    withdrawalDays: 14, // 14 días naturales derecho de desistimiento
-    taxIncludedText: "Todos los precios incluyen IVA",
-    cookiesPolicyVersion: "1.0 - Noviembre 2026"
-  }
+    withdrawalDays: 14,
+    taxIncludedText: 'Precios con IVA incluido',
+    policyVersion: '2026-11',
+  },
+
+  invoices: {
+    // El panel emite facturas SIN desglose de IVA (precio final con IVA incluido).
+    showVatBreakdown: false,
+    prefix: 'FACT',
+  },
 };
 
-export default SITE_CONFIG;
+export const hasValue = (v) => typeof v === 'string' && v.trim().length > 0;
 
+export function shippingCostFor(method, subtotal) {
+  const m = SITE_CONFIG.shipping.methods[method];
+  if (!m || !m.enabled) return null;
+  const thr = SITE_CONFIG.shipping.freeShippingThreshold;
+  if (thr != null && subtotal >= thr) return 0;
+  return m.cost;
+}
+
+export function allowedPayments(method) {
+  const m = SITE_CONFIG.shipping.methods[method];
+  return m && m.enabled ? m.payments : [];
+}
+
+export function siteUrl() {
+  return hasValue(SITE_CONFIG.brand.domain)
+    ? SITE_CONFIG.brand.domain.replace(/\/$/, '')
+    : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+}
+
+export default SITE_CONFIG;

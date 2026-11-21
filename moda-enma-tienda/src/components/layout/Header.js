@@ -1,210 +1,113 @@
 'use client';
-
-import { useState, useEffect } from 'react';
+// moda-enma-tienda/src/components/layout/Header.js
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { ShoppingBag, Search, Menu, X, ChevronRight } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Search, ShoppingBag, Menu, X, ArrowRight } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
-import { CATEGORIES } from '@/lib/mockCatalog';
+import { DEPARTMENTS } from '@/lib/categories';
+import { SITE_CONFIG } from '@/site.config';
 
 export default function Header() {
   const pathname = usePathname();
-  const { cartCount, setIsCartOpen } = useCart();
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const router = useRouter();
+  const { count, openCart } = useCart();
+  const [menu, setMenu] = useState(false);
+  const [search, setSearch] = useState(false);
+  const [q, setQ] = useState('');
+  const [stuck, setStuck] = useState(false);
+  const input = useRef(null);
 
+  useEffect(() => { setMenu(false); setSearch(false); }, [pathname]);
   useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 15) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    const on = () => setStuck(window.scrollY > 8);
+    on();
+    window.addEventListener('scroll', on, { passive: true });
+    return () => window.removeEventListener('scroll', on);
   }, []);
+  useEffect(() => {
+    document.body.style.overflow = menu ? 'hidden' : '';
+    const esc = (e) => { if (e.key === 'Escape') { setMenu(false); setSearch(false); } };
+    window.addEventListener('keydown', esc);
+    return () => { window.removeEventListener('keydown', esc); document.body.style.overflow = ''; };
+  }, [menu]);
+  useEffect(() => { if (search) input.current?.focus(); }, [search]);
 
-  const handleSearchSubmit = (e) => {
+  const submit = (e) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      window.location.href = `/?search=${encodeURIComponent(searchQuery.trim())}`;
-    }
+    if (q.trim()) router.push(`/buscar?q=${encodeURIComponent(q.trim())}`);
   };
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-[#fcfbf9]/95 backdrop-blur-md border-b border-warm-border/60 ${
-      isScrolled ? 'py-3.5 shadow-xs' : 'py-5'
-    }`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-        
-        {/* Left: Mobile Menu Toggle + Desktop Nav Category Links */}
-        <div className="flex items-center gap-6">
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden text-warm-dark hover:text-brand-terracotta transition-colors p-1"
-            aria-label="Toggle menu"
-          >
-            {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+    <header className={`sticky top-0 z-40 border-b bg-cream/92 backdrop-blur-md transition-shadow duration-300 ${stuck ? 'border-line shadow-soft' : 'border-transparent'}`}>
+      <div className="wrap grid h-16 grid-cols-[1fr_auto_1fr] items-center sm:h-[72px]">
+        <div className="flex items-center gap-1">
+          <button className="-ml-3 flex h-12 w-12 items-center justify-center rounded-full lg:hidden" onClick={() => setMenu(true)} aria-label="Abrir menú" aria-expanded={menu}>
+            <Menu size={22} />
           </button>
-
-          <nav className="hidden md:flex items-center gap-8">
-            <Link
-              href="/"
-              className={`text-xs font-semibold tracking-editorial uppercase transition-colors relative py-1 ${
-                pathname === '/' ? 'text-warm-dark font-bold' : 'text-warm-muted hover:text-warm-dark'
-              }`}
-            >
-              Inicio
-              {pathname === '/' && (
-                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-brand-terracotta rounded-full" />
-              )}
-            </Link>
-            {CATEGORIES.map((cat) => {
-              const isActive = pathname === `/${cat.id}`;
+          <nav className="hidden items-center gap-7 lg:flex" aria-label="Principal">
+            {DEPARTMENTS.map((d) => {
+              const active = pathname === `/${d.id}`;
               return (
-                <div key={cat.id} className="relative group py-2">
-                  <Link
-                    href={`/${cat.id}`}
-                    className={`text-xs font-semibold tracking-editorial uppercase transition-colors relative py-1 ${
-                      isActive ? 'text-warm-dark font-bold' : 'text-warm-muted hover:text-warm-dark'
-                    }`}
-                  >
-                    {cat.name}
-                    {isActive && (
-                      <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-brand-terracotta rounded-full" />
-                    )}
-                  </Link>
-                </div>
+                <Link key={d.id} href={`/${d.id}`} className={`link-draw py-2 text-[13px] font-semibold tracking-wide ${active ? 'text-terracotta-deep' : 'text-ink'}`} aria-current={active ? 'page' : undefined}>
+                  {d.name}
+                </Link>
               );
             })}
           </nav>
         </div>
 
-        {/* Center: Brand Logo (Zara / Mango Luxury Typography) */}
-        <div className="text-center">
-          <Link href="/" className="inline-block">
-            <span className="font-display text-2xl sm:text-3xl font-normal tracking-[0.22em] text-warm-dark block uppercase leading-none">
-              ModaEnma
-            </span>
-            <span className="text-[9px] tracking-[0.38em] uppercase text-warm-muted block mt-1 font-semibold">
-              Boutique Store
-            </span>
-          </Link>
-        </div>
+        <Link href="/" className="text-center" aria-label={`${SITE_CONFIG.brand.name}, inicio`}>
+          <span className="font-display text-[28px] font-semibold leading-none tracking-[0.04em] sm:text-[32px]">
+            Moda<span className="text-terracotta">Enma</span>
+          </span>
+        </Link>
 
-        {/* Right: Search + Cart Icon */}
-        <div className="flex items-center gap-5">
-          <button
-            onClick={() => setSearchOpen(!searchOpen)}
-            className="text-warm-dark hover:text-brand-terracotta transition-colors p-1 flex items-center gap-2"
-            aria-label="Buscar"
-          >
-            <Search size={19} />
-            <span className="hidden sm:inline text-[11px] uppercase tracking-editorial text-warm-muted font-medium">
-              Buscar
-            </span>
+        <div className="flex items-center justify-end gap-0.5">
+          <button className="flex h-12 w-12 items-center justify-center rounded-full transition-colors hover:bg-sand" onClick={() => setSearch((s) => !s)} aria-label="Buscar" aria-expanded={search}>
+            <Search size={20} />
           </button>
-
-          <button
-            onClick={() => setIsCartOpen(true)}
-            className="relative text-warm-dark hover:text-brand-terracotta transition-colors p-1 flex items-center gap-1.5"
-            aria-label="Carrito"
-          >
-            <ShoppingBag size={20} />
-            {cartCount > 0 && (
-              <span className="absolute -top-1.5 -right-2 bg-brand-terracotta text-white font-bold text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
-                {cartCount}
+          <button className="relative -mr-2 flex h-12 w-12 items-center justify-center rounded-full transition-colors hover:bg-sand" onClick={openCart} aria-label={`Abrir bolsa, ${count} artículos`}>
+            <ShoppingBag size={21} />
+            {count > 0 && (
+              <span key={count} className="absolute right-1 top-1.5 flex h-[18px] min-w-[18px] animate-[rise_0.3s_var(--ease-out)] items-center justify-center rounded-full bg-terracotta-deep px-1 text-[11px] font-bold text-white">
+                {count}
               </span>
             )}
-            <span className="hidden sm:inline text-xs font-semibold tracking-wider ml-1">
-              ({cartCount})
-            </span>
           </button>
         </div>
       </div>
 
-      {/* Quick Search Overlay */}
-      {searchOpen && (
-        <div className="w-full bg-white/95 backdrop-blur-xl border-t border-warm-border px-4 py-4 animate-fade-in shadow-md">
-          <div className="max-w-3xl mx-auto">
-            <form onSubmit={handleSearchSubmit} className="relative flex items-center">
-              <input
-                type="text"
-                placeholder="Buscar vestidos, blusas, abrigos, botellas metálicas, deporte..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                autoFocus
-                className="w-full bg-warm-sand/80 border border-warm-border rounded-full py-2.5 pl-12 pr-10 text-sm text-warm-dark placeholder-warm-muted focus:outline-none focus:border-brand-terracotta transition-colors"
-              />
-              <Search size={18} className="absolute left-4 text-warm-muted" />
-              <button
-                type="button"
-                onClick={() => setSearchOpen(false)}
-                className="absolute right-3 text-warm-muted hover:text-warm-dark p-1"
-              >
-                <X size={18} />
-              </button>
-            </form>
-          </div>
+      {search && (
+        <div className="border-t border-line bg-paper">
+          <form onSubmit={submit} className="wrap flex items-center gap-3 py-3" role="search">
+            <Search size={18} className="shrink-0 text-ink-soft" aria-hidden />
+            <input ref={input} value={q} onChange={(e) => setQ(e.target.value)} type="search" enterKeyHint="search" placeholder="Busca un vestido, una botella, unas mallas…" aria-label="Buscar en la tienda" className="h-11 w-full bg-transparent text-base placeholder:text-ink-soft/70 focus:outline-none" />
+            <button type="button" onClick={() => setSearch(false)} className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-sand" aria-label="Cerrar búsqueda"><X size={18} /></button>
+          </form>
         </div>
       )}
 
-      {/* Mobile Drawer Menu */}
-      {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 top-[70px] bg-[#fcfbf9]/98 backdrop-blur-2xl z-40 px-6 py-8 flex flex-col justify-between animate-fade-in border-t border-warm-border">
-          <div className="space-y-6">
-            <span className="text-[10px] tracking-editorial uppercase text-warm-muted font-bold block mb-4">
-              Navegación
-            </span>
-            <Link
-              href="/"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center justify-between text-lg font-display text-warm-dark border-b border-warm-border pb-3 font-semibold"
-            >
-              <span>Inicio</span>
-              <ChevronRight size={16} className="text-warm-muted" />
+      {/* Menú móvil a pantalla completa */}
+      <div className={`fixed inset-0 z-50 bg-cream transition-[opacity,visibility] duration-300 lg:hidden ${menu ? 'visible opacity-100' : 'invisible opacity-0'}`} role="dialog" aria-modal="true" aria-label="Menú" inert={!menu ? '' : undefined}>
+        <div className="wrap flex h-16 items-center justify-between">
+          <span className="font-display text-[28px] font-semibold">Moda<span className="text-terracotta">Enma</span></span>
+          <button className="-mr-3 flex h-12 w-12 items-center justify-center rounded-full" onClick={() => setMenu(false)} aria-label="Cerrar menú"><X size={22} /></button>
+        </div>
+        <div className="wrap space-y-2.5 pb-10 pt-3">
+          {DEPARTMENTS.map((d, i) => (
+            <Link key={d.id} href={`/${d.id}`} style={{ backgroundColor: `rgb(var(--c-${d.tint}))`, transitionDelay: menu ? `${60 + i * 45}ms` : '0ms' }} className={`flex min-h-[64px] items-center justify-between rounded-lg px-5 font-display text-[28px] font-medium transition-[transform,opacity] duration-500 ease-out ${menu ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0'}`}>
+              {d.name}
+              <ArrowRight size={20} />
             </Link>
-            {CATEGORIES.map((cat) => (
-              <Link
-                key={cat.id}
-                href={`/${cat.id}`}
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between text-lg font-display text-warm-dark border-b border-warm-border pb-3"
-              >
-                <span>{cat.name}</span>
-                <ChevronRight size={16} className="text-warm-muted" />
-              </Link>
-            ))}
-          </div>
-
-          <div className="space-y-4 pt-6 border-t border-warm-border">
-            <Link
-              href="/sobre-nosotros"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block text-xs uppercase tracking-editorial text-warm-muted hover:text-warm-dark"
-            >
-              Sobre la Marca
-            </Link>
-            <Link
-              href="/contacto"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block text-xs uppercase tracking-editorial text-warm-muted hover:text-warm-dark"
-            >
-              Contacto Boutique
-            </Link>
-            <Link
-              href="/envios-devoluciones"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block text-xs uppercase tracking-editorial text-warm-muted hover:text-warm-dark"
-            >
-              Envíos & Devoluciones
-            </Link>
+          ))}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 pt-6 text-[15px]">
+            <Link href="/envios-devoluciones" className="py-3 font-medium">Envíos y devoluciones</Link>
+            <Link href="/contacto" className="py-3 font-medium">Contacto</Link>
+            <Link href="/sobre-nosotros" className="py-3 font-medium">Quiénes somos</Link>
           </div>
         </div>
-      )}
+      </div>
     </header>
   );
 }

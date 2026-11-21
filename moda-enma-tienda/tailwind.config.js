@@ -1,37 +1,30 @@
+/** moda-enma-tienda/tailwind.config.js — los colores salen de tokens.css (fuente única) */
+const c = (name) => `rgb(var(--c-${name}) / <alpha-value>)`;
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: [
-    './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
-    './src/components/**/*.{js,ts,jsx,tsx,mdx}',
-    './src/app/**/*.{js,ts,jsx,tsx,mdx}',
-  ],
+  content: ['./src/**/*.{js,jsx}'],
   theme: {
     extend: {
       colors: {
-        warm: {
-          bg: '#fcfbf9',
-          card: '#ffffff',
-          sand: '#f4f0e8',
-          pill: '#ece7de',
-          border: '#e7e2d7',
-          dark: '#1c1917',
-          muted: '#78716c',
-        },
-        brand: {
-          terracotta: '#c86d51',
-          terracottaDark: '#a9553c',
-          olive: '#747c5d',
-          gold: '#c5a880',
-        }
+        cream: c('cream'), paper: c('paper'), sand: c('sand'), line: c('line'),
+        ink: { DEFAULT: c('ink'), soft: c('ink-soft') },
+        terracotta: { DEFAULT: c('terracotta'), deep: c('terracotta-deep'), soft: c('terracotta-soft') },
+        tint: { mujer: c('mujer'), hombre: c('hombre'), ninos: c('ninos'), deporte: c('deporte'), accesorios: c('accesorios') },
+        ok: c('ok'), warn: c('warn'), bad: c('bad'),
       },
       fontFamily: {
-        sans: ['var(--font-sans)', 'Helvetica Neue', 'Arial', 'sans-serif'],
-        display: ['var(--font-display)', 'Didot', 'Bodoni MT', 'serif'],
+        display: ['"Cormorant Garamond"', 'Georgia', 'serif'],
+        sans: ['"Plus Jakarta Sans Variable"', 'system-ui', '-apple-system', 'sans-serif'],
       },
-      letterSpacing: {
-        widest: '0.25em',
-        editorial: '0.15em',
+      borderRadius: { sm: 'var(--r-sm)', md: 'var(--r-md)', lg: 'var(--r-lg)' },
+      boxShadow: { soft: 'var(--shadow-soft)', lift: 'var(--shadow-lift)' },
+      transitionTimingFunction: { out: 'var(--ease-out)', 'in-out': 'var(--ease-in-out)' },
+      keyframes: {
+        marquee: { from: { transform: 'translateX(0)' }, to: { transform: 'translateX(-50%)' } },
+        float: { '0%,100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-8px)' } },
       },
+      animation: { marquee: 'marquee 38s linear infinite', float: 'float 6s ease-in-out infinite' },
     },
   },
   plugins: [],
