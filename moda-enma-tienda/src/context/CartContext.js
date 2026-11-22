@@ -1,109 +1,99 @@
 'use client';
-import { createContext, useContext, useState, useEffect } from 'react';
+// moda-enma-tienda/src/context/CartContext.js
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
-const CartContext = createContext();
+const CartContext = createContext(null);
+const KEY = 'modaenma_cart_v2';
+const MAX_PER_LINE = 10;
 
 export function CartProvider({ children }) {
-  const [cart, setCart] = useState([]);
-  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [items, setItems] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [ready, setReady] = useState(false);
+  const checked = useRef(false);
 
-  // Hydrate from localStorage client-side
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('modainma_cart');
-      if (saved) {
-        setCart(JSON.parse(saved));
-      }
-    } catch (e) {
-      console.warn("Error leyendo carrito de localStorage", e);
-    }
+      const saved = JSON.parse(localStorage.getItem(KEY) || '[]');
+      if (Array.isArray(saved)) setItems(saved);
+    } catch {}
+    setReady(true);
   }, []);
 
-  // Sync to localStorage
   useEffect(() => {
+    if (!ready) return;
+    try { localStorage.setItem(KEY, JSON.stringify(items)); } catch {}
+  }, [items, ready]);
+
+  // Reconcilia precio y stock con el servidor una vez por visita (y al abrir la bolsa).
+  const reconcile = useCallback(async (list) => {
+    if (!list.length) return;
     try {
-      localStorage.setItem('modainma_cart', JSON.stringify(cart));
-    } catch (e) {
-      console.warn("Error guardando carrito en localStorage", e);
-    }
-  }, [cart]);
+      const res = await fetch('/api/cart/check', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: list.map((i) => ({ key: i.key, productId: i.productId, size: i.size })) }),
+      });
+      const { items: info } = await res.json();
+      if (!info?.length) return;
+      setItems((prev) => prev.flatMap((it) => {
+        const n = info.find((x) => x.key === it.key);
+        if (!n) return [it];
+        if (!n.available || n.stock <= 0) return [{ ...it, soldOut: true, max: 0 }];
+        return [{ ...it, soldOut: false, price: n.price, max: n.stock, quantity: Math.min(it.quantity, n.stock) }];
+      }));
+    } catch {}
+  }, []);
 
-  const addToCart = (product, size, quantity = 1, color = 'Estándar') => {
-    setCart((prev) => {
-      const cartItemId = `${product.id}-${size}`;
-      const existingIndex = prev.findIndex(item => item.cartItemId === cartItemId);
+  useEffect(() => {
+    if (ready && !checked.current && items.length) { checked.current = true; reconcile(items); }
+  }, [ready, items, reconcile]);
 
-      if (existingIndex > -1) {
-        const updated = [...prev];
-        updated[existingIndex].quantity += quantity;
-        return updated;
+  const add = useCallback((product, size, quantity = 1) => {
+    const variant = product.variants.find((v) => v.size === size);
+    const max = Math.min(MAX_PER_LINE, variant ? variant.stock : 0);
+    if (max <= 0) return { ok: false, reason: 'agotado' };
+    const key = `${product.id}__${size}`;
+    let capped = false;
+    setItems((prev) => {
+      const i = prev.findIndex((x) => x.key === key);
+      if (i > -1) {
+        const next = [...prev];
+        const q = Math.min(max, next[i].quantity + quantity);
+        capped = q === next[i].quantity;
+        next[i] = { ...next[i], quantity: q, max, price: product.salePrice, soldOut: false };
+        return next;
       }
-
-      return [
-        ...prev,
-        {
-          cartItemId,
-          id: product.id,
-          name: product.name,
-          sku: product.sku,
-          category: product.category,
-          salePrice: product.salePrice,
-          image: product.image || (product.images && product.images[0]),
-          size,
-          color,
-          quantity
-        }
-      ];
+      return [...prev, { key, productId: product.id, name: product.name, price: product.salePrice, image: product.images[0] || '', department: product.department, size, quantity: Math.min(max, quantity), max }];
     });
-    setIsCartOpen(true);
-  };
+    setOpen(true);
+    return { ok: true, capped };
+  }, []);
 
-  const removeFromCart = (cartItemId) => {
-    setCart((prev) => prev.filter(item => item.cartItemId !== cartItemId));
-  };
+  const remove = useCallback((key) => setItems((p) => p.filter((i) => i.key !== key)), []);
+  const restore = useCallback((item) => setItems((p) => (p.some((i) => i.key === item.key) ? p : [...p, item])), []);
+  const setQty = useCallback((key, q) => setItems((p) => p.flatMap((i) => {
+    if (i.key !== key) return [i];
+    if (q <= 0) return [];
+    return [{ ...i, quantity: Math.min(q, i.max || MAX_PER_LINE) }];
+  })), []);
+  const clear = useCallback(() => setItems([]), []);
+  const openCart = useCallback(() => { setOpen(true); reconcile(items); }, [items, reconcile]);
 
-  const updateQuantity = (cartItemId, newQuantity) => {
-    if (newQuantity <= 0) {
-      removeFromCart(cartItemId);
-      return;
-    }
-    setCart((prev) =>
-      prev.map(item =>
-        item.cartItemId === cartItemId ? { ...item, quantity: newQuantity } : item
-      )
-    );
-  };
+  const value = useMemo(() => {
+    const buyable = items.filter((i) => !i.soldOut);
+    return {
+      items, ready, open, setOpen, openCart, add, remove, restore, setQty, clear,
+      count: buyable.reduce((s, i) => s + i.quantity, 0),
+      subtotal: Math.round(buyable.reduce((s, i) => s + i.price * i.quantity, 0) * 100) / 100,
+      reconcile,
+    };
+  }, [items, ready, open, openCart, add, remove, restore, setQty, clear, reconcile]);
 
-  const clearCart = () => {
-    setCart([]);
-  };
-
-  const cartTotal = cart.reduce((sum, item) => sum + item.salePrice * item.quantity, 0);
-  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-
-  return (
-    <CartContext.Provider
-      value={{
-        cart,
-        addToCart,
-        removeFromCart,
-        updateQuantity,
-        clearCart,
-        cartTotal,
-        cartCount,
-        isCartOpen,
-        setIsCartOpen
-      }}
-    >
-      {children}
-    </CartContext.Provider>
-  );
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
 
 export function useCart() {
-  const context = useContext(CartContext);
-  if (!context) {
-    throw new Error('useCart debe ser usado dentro de un CartProvider');
-  }
-  return context;
+  const ctx = useContext(CartContext);
+  if (!ctx) throw new Error('useCart debe usarse dentro de CartProvider');
+  return ctx;
 }

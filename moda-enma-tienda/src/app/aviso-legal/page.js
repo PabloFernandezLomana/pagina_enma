@@ -1,51 +1,24 @@
-import Link from 'next/link';
+// moda-enma-tienda/src/app/aviso-legal/page.js
+import LegalPage, { H, P, owner } from '@/components/legal/LegalPage';
 import { SITE_CONFIG } from '@/site.config';
 
-export const metadata = {
-  title: 'Aviso Legal | ModaEnma',
-  description: 'Datos identificativos y condiciones de uso del portal ModaEnma Boutique.'
-};
+export const metadata = { title: 'Aviso legal' };
 
-export default function AvisoLegalPage() {
+export default function Page() {
+  const o = owner();
   return (
-    <div className="min-h-screen bg-warm-bg text-warm-dark pt-32 pb-24 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto space-y-8">
-      <div className="border-b border-warm-border pb-6">
-        <span className="text-editorial-sub">LSSI-CE & TRANSPARENCIA</span>
-        <h1 className="font-display text-3xl sm:text-4xl font-light uppercase tracking-tight mt-1">
-          Aviso Legal
-        </h1>
-        <p className="text-xs text-warm-muted mt-2">Cumplimiento del artículo 10 de la Ley 34/2002 (LSSI-CE)</p>
-      </div>
-
-      <div className="prose prose-stone text-xs sm:text-sm text-warm-muted space-y-6 leading-relaxed">
-        <section className="space-y-2">
-          <h2 className="text-base font-bold text-warm-dark uppercase tracking-editorial">1. Datos Identificativos</h2>
-          <p>
-            En cumplimiento del deber de información recogido en el artículo 10 de la Ley 34/2002, de Servicios de la Sociedad de la Información y del Comercio Electrónico, se reflejan los siguientes datos:
-          </p>
-          <ul className="list-disc pl-5 space-y-1">
-            <li><strong>Titular</strong>: {SITE_CONFIG.brand.legalName} [REVISAR CON GESTOR]</li>
-            <li><strong>NIF/CIF</strong>: {SITE_CONFIG.brand.nif}</li>
-            <li><strong>Domicilio Social</strong>: {SITE_CONFIG.brand.address}</li>
-            <li><strong>Correo Electrónico</strong>: {SITE_CONFIG.brand.email}</li>
-            <li><strong>Actividad Comercial</strong>: Comercio al por menor de prendas de vestir y complementos de moda.</li>
-          </ul>
-        </section>
-
-        <section className="space-y-2">
-          <h2 className="text-base font-bold text-warm-dark uppercase tracking-editorial">2. Propiedad Intelectual</h2>
-          <p>
-            Los textos, imágenes de producto, diseño gráfico y código fuente son titularidad exclusiva de ModaEnma o disponen de las licencias correspondientes. Queda prohibida su reproducción o distribución sin consentimiento previo.
-          </p>
-        </section>
-      </div>
-
-      <div className="pt-6 border-t border-warm-border">
-        <Link href="/" className="text-xs font-bold tracking-editorial uppercase text-brand-terracotta hover:underline">
-          ← Volver a la Tienda
-        </Link>
-      </div>
-    </div>
+    <LegalPage title="Aviso legal" intro="Información del titular de este sitio web, según la Ley 34/2002 de servicios de la sociedad de la información (LSSI-CE).">
+      <H>1. Titular del sitio web</H>
+      <P>Titular: {o.name}. NIF: {o.nif}. Domicilio: {o.address}. Correo electrónico: {o.email}.</P>
+      <P>Nombre comercial: {SITE_CONFIG.brand.name}. Actividad: venta online de ropa, artículos deportivos y accesorios.</P>
+      <H>2. Objeto y condiciones de uso</H>
+      <P>Este sitio web permite conocer y comprar los productos de {SITE_CONFIG.brand.name}. Navegar por él supone aceptar este aviso legal. Te comprometes a usarlo de forma lícita y sin dañar su funcionamiento.</P>
+      <H>3. Propiedad intelectual</H>
+      <P>Los textos, imágenes, ilustraciones, diseño y marca de este sitio pertenecen al titular o se usan con autorización. No se pueden copiar ni distribuir sin permiso por escrito, salvo uso personal.</P>
+      <H>4. Responsabilidad</H>
+      <P>Procuramos que la información sea exacta y esté actualizada, pero pueden existir errores puntuales en precios, descripciones o disponibilidad. Si detectamos uno en un pedido, te lo comunicaremos antes de confirmarlo. No respondemos de interrupciones del servicio ajenas a nuestro control ni del contenido de sitios externos enlazados.</P>
+      <H>5. Legislación y jurisdicción</H>
+      <P>Este aviso se rige por la legislación española. Si eres consumidor, para cualquier conflicto serán competentes los juzgados de tu domicilio, conforme a la normativa de consumidores y usuarios.</P>
+    </LegalPage>
   );
 }
-

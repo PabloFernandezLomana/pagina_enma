@@ -1,244 +1,151 @@
 'use client';
-
-import { useState } from 'react';
-import Image from 'next/image';
+// moda-enma-tienda/src/app/producto/[id]/ProductDetailClient.js
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ShoppingBag, ShieldCheck, Truck, RotateCcw, Check, Sparkles } from 'lucide-react';
+import Image from 'next/image';
+import { toast } from 'sonner';
+import { ShoppingBag, Truck, RotateCcw, ChevronDown, Check } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import { getClientFirestore } from '@/lib/firebase.client';
+import { toPublicProduct, totalStock } from '@/lib/productShape';
+import { getDepartment } from '@/lib/categories';
+import { eur } from '@/lib/format';
+import { SITE_CONFIG } from '@/site.config';
 
-export default function ProductDetailClient({ product }) {
-  const { addToCart } = useCart();
+export default function ProductDetailClient({ initial }) {
+  const { add } = useCart();
+  const [p, setP] = useState(initial);
+  const [size, setSize] = useState('');
+  const [img, setImg] = useState(0);
+  const [pulse, setPulse] = useState(0);
+  const galleryRef = useRef(null);
+  const dep = getDepartment(p.department);
+  const { delivery, meetup } = SITE_CONFIG.shipping.methods;
 
-  if (!product) return null;
+  // Stock en tiempo real: si cambias el stock en el panel, esta ficha se actualiza sola.
+  useEffect(() => {
+    let unsub = () => {};
+    let cancelled = false;
+    getClientFirestore().then((c) => {
+      if (!c || cancelled) return;
+      const { db, fs } = c;
+      unsub = fs.onSnapshot(fs.doc(db, 'products', initial.id), (s) => { if (s.exists() && s.data().active) setP(toPublicProduct(s.id, s.data())); }, () => {});
+    });
+    return () => { cancelled = true; unsub(); };
+  }, [initial.id]);
 
-  const { name, category = 'Moda', sku = 'REF-001', salePrice = 0, description = '', image, images, variants, is3d } = product;
+  const variant = p.variants.find((v) => v.size === size);
+  const soldOut = totalStock(p) === 0;
+  const ready = Boolean(variant && variant.stock > 0);
 
-  const fallbackImg = "https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?auto=format&fit=crop&w=1000&q=85";
-  const rawImageList = images && images.length > 0 ? images : [image || fallbackImg];
-  const imageList = rawImageList.filter(Boolean);
-  
-  const [activeImg, setActiveImg] = useState(imageList[0] || fallbackImg);
-  const [isImgLoading, setIsImgLoading] = useState(true);
-  
-  // Available sizes
-  const availableVariants = variants && variants.length > 0 ? variants : [
-    { size: 'XS', stock: 2 },
-    { size: 'S', stock: 4 },
-    { size: 'M', stock: 5 },
-    { size: 'L', stock: 3 },
-    { size: 'XL', stock: 1 }
-  ];
-
-  const firstAvailableSize = availableVariants.find(v => v.stock > 0)?.size || availableVariants[0]?.size || 'S';
-  const [selectedSize, setSelectedSize] = useState(firstAvailableSize);
-  const [activeTab, setActiveTab] = useState('detalle');
-
-  const currentVariant = availableVariants.find(v => v.size === selectedSize);
-  const selectedStock = currentVariant ? currentVariant.stock : 0;
-  const isSelectedOutOfStock = selectedStock === 0;
-
-  const handleAddToCart = () => {
-    if (isSelectedOutOfStock) return;
-    addToCart(product, selectedSize, 1);
+  const addToBag = () => {
+    if (!size) { toast('Elige una talla primero'); setPulse((n) => n + 1); return; }
+    const r = add(p, size, 1);
+    if (!r.ok) return toast.error('Esa talla se acaba de agotar');
+    if (r.capped) toast('Ya tienes todas las unidades disponibles en la bolsa');
+    fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'cart', productId: p.id }), keepalive: true }).catch(() => {});
   };
 
-  const handleThumbnailClick = (img) => {
-    if (img !== activeImg) {
-      setIsImgLoading(true);
-      setActiveImg(img);
-    }
-  };
+  const onScroll = (e) => { const el = e.currentTarget; setImg(Math.round(el.scrollLeft / el.clientWidth)); };
+  const goTo = (i) => { setImg(i); galleryRef.current?.scrollTo({ left: i * galleryRef.current.clientWidth, behavior: 'smooth' }); };
 
   return (
-    <div className="min-h-screen bg-warm-bg text-warm-dark pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-      
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-[11px] font-bold tracking-editorial uppercase text-warm-muted mb-8">
-        <Link href="/" className="hover:text-warm-dark transition-colors">Inicio</Link>
-        <span>/</span>
-        <Link href={`/${category.toLowerCase()}`} className="hover:text-warm-dark transition-colors">{category}</Link>
-        <span>/</span>
-        <span className="text-warm-dark font-bold line-clamp-1">{name}</span>
-      </div>
+    <div className="wrap pb-16 pt-6 sm:pt-10">
+      <nav aria-label="Migas de pan" className="mb-6 text-[13px] font-medium text-ink-soft">
+        <Link href="/" className="link-draw">Inicio</Link> / {dep && <><Link href={`/${dep.id}`} className="link-draw">{dep.name}</Link> / </>}<span className="text-ink">{p.name}</span>
+      </nav>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-        
-        {/* Left Column: Multi-Image Gallery */}
-        <div className="lg:col-span-7 space-y-4">
-          <div className="space-y-4">
-            
-            {/* Main Image Frame with Skeleton Loading Placeholder */}
-            <div className="aspect-[3/4] w-full bg-warm-sand rounded-xs overflow-hidden relative border border-warm-border shadow-xs">
-                {isImgLoading && (
-                  <div className="absolute inset-0 bg-warm-sand animate-pulse flex items-center justify-center text-warm-muted text-xs font-medium">
-                    <span>Cargando fotografía de alta resolución...</span>
-                  </div>
-                )}
-                <Image
-                  src={activeImg}
-                  alt={name || "Prenda ModaEnma"}
-                  fill
-                  priority
-                  sizes="(max-width: 1024px) 100vw, 60vw"
-                  className={`object-cover object-center transition-opacity duration-300 ${
-                    isImgLoading ? 'opacity-0' : 'opacity-100'
-                  }`}
-                  onLoadingComplete={() => setIsImgLoading(false)}
-                />
+      <div className="grid gap-8 lg:grid-cols-[1.15fr_1fr] lg:gap-14">
+        <div className="lg:sticky lg:top-24 lg:self-start">
+          <div className={`grid gap-3 ${p.images.length > 1 ? 'lg:grid-cols-[84px_1fr]' : ''}`}>
+            {p.images.length > 1 && (
+              <div className="order-2 hidden flex-col gap-3 lg:order-1 lg:flex" role="tablist" aria-label="Fotos">
+                {p.images.map((src, i) => (
+                  <button key={src} role="tab" aria-selected={img === i} onClick={() => goTo(i)} className={`relative aspect-[3/4] overflow-hidden rounded-md bg-sand ring-2 transition-[box-shadow,opacity] ${img === i ? 'opacity-100 ring-ink' : 'opacity-70 ring-transparent hover:opacity-100'}`}>
+                    <Image src={src} alt={`Foto ${i + 1}`} fill sizes="84px" className="object-cover" />
+                  </button>
+                ))}
               </div>
-
-              {/* Thumbnails Carousel Row (Zara / Mango Style Multi-Image Gallery) */}
-              {imageList.length > 1 && (
-                <div className="space-y-1.5">
-                  <span className="text-[10px] font-bold tracking-editorial uppercase text-warm-muted block">
-                    Vistas de la Prenda ({imageList.length} fotografías):
-                  </span>
-                  <div className="flex gap-3 overflow-x-auto pb-2">
-                    {imageList.map((img, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => handleThumbnailClick(img)}
-                        className={`w-20 h-24 relative rounded-xs overflow-hidden border-2 transition-all flex-shrink-0 ${
-                          activeImg === img ? 'border-brand-terracotta scale-102 shadow-xs' : 'border-transparent opacity-65 hover:opacity-100'
-                        }`}
-                      >
-                        <Image
-                          src={img}
-                          alt={`Vista ${idx + 1}`}
-                          fill
-                          className="object-cover"
-                        />
-                      </button>
-                    ))}
+            )}
+            <div className="order-1 lg:order-2">
+              <div ref={galleryRef} onScroll={onScroll} className="flex snap-x snap-mandatory overflow-x-auto rounded-lg [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:overflow-hidden" style={{ backgroundColor: `rgb(var(--c-${p.department}))` }}>
+                {p.images.map((src, i) => (
+                  <div key={src} className={`relative aspect-[3/4] w-full shrink-0 snap-center ${i === img ? '' : 'lg:hidden'}`}>
+                    <Image src={src} alt={i === 0 ? p.name : `${p.name}, foto ${i + 1}`} fill priority={i === 0} sizes="(min-width:1024px) 55vw, 100vw" className="object-cover" />
                   </div>
+                ))}
+              </div>
+              {p.images.length > 1 && (
+                <div className="mt-3 flex justify-center gap-1.5 lg:hidden" aria-hidden>
+                  {p.images.map((_, i) => <span key={i} className={`h-1.5 rounded-full transition-all duration-300 ${img === i ? 'w-5 bg-ink' : 'w-1.5 bg-ink/25'}`} />)}
                 </div>
               )}
-
             </div>
+          </div>
         </div>
 
-        {/* Right Column: Details & Purchase Actions */}
-        <div className="lg:col-span-5 space-y-8 sticky top-28">
-          <div>
-            <span className="text-[10px] font-bold tracking-editorial uppercase text-warm-muted block mb-2">
-              REF: {sku} • {category}
-            </span>
-            <h1 className="font-display text-3xl sm:text-4xl font-light text-warm-dark tracking-tight uppercase leading-tight">
-              {name}
-            </h1>
-            <div className="mt-4 flex items-center justify-between">
-              <span className="text-2xl font-bold text-warm-dark tracking-wide">
-                {salePrice.toFixed(2)} €
-              </span>
-              <span className="text-xs text-warm-muted font-medium">
-                IVA incluido
-              </span>
+        <div>
+          <p className="eyebrow">{p.category}{p.sku ? ` · Ref. ${p.sku}` : ''}</p>
+          <h1 className="h-display mt-2 text-[clamp(38px,5vw,64px)]">{p.name}</h1>
+          <p className="mt-4 flex items-baseline gap-3"><span className="text-[28px] font-bold tabular-nums">{eur(p.salePrice)}</span><span className="text-[13px] text-ink-soft">{SITE_CONFIG.legal.taxIncludedText}</span></p>
+          {p.description && <p className="mt-6 max-w-[56ch] text-[17px] leading-relaxed text-ink/85">{p.description}</p>}
+
+          <div className="mt-8" key={pulse} style={pulse ? { animation: 'rise .35s var(--ease-out)' } : undefined}>
+            <div className="flex items-baseline justify-between">
+              <h2 className="text-[15px] font-bold">Talla</h2>
+              <p className="text-[13px] font-medium" aria-live="polite">
+                {variant ? (variant.stock <= 3 ? <span className="text-warn">Quedan {variant.stock}</span> : <span className="inline-flex items-center gap-1 text-ok"><Check size={14} /> Disponible</span>) : <span className="text-ink-soft">Elige una</span>}
+              </p>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2.5" role="radiogroup" aria-label="Talla">
+              {p.variants.map((v) => (
+                <button key={v.size} role="radio" aria-checked={size === v.size} disabled={v.stock === 0} onClick={() => setSize(v.size)}
+                  className={`relative min-h-[48px] min-w-[56px] rounded-full border px-5 text-[15px] font-bold transition-[background-color,color,border-color,transform] duration-150 active:scale-95 disabled:cursor-not-allowed ${size === v.size ? 'border-ink bg-ink text-cream' : v.stock === 0 ? 'border-line bg-sand/50 text-ink-soft/60 line-through' : 'border-line bg-paper hover:border-ink'}`}>
+                  {v.size}
+                </button>
+              ))}
             </div>
           </div>
 
-          <p className="text-xs text-warm-muted font-light leading-relaxed border-t border-b border-warm-border py-4">
-            {description}
-          </p>
-
-          {/* Size Selector */}
-          <div className="space-y-3">
-            <div className="flex justify-between items-center text-xs">
-              <span className="font-semibold tracking-editorial uppercase text-warm-dark">
-                Selecciona Talla:
-              </span>
-              {selectedStock > 0 ? (
-                <span className="text-emerald-700 font-bold flex items-center gap-1">
-                  <Check size={13} />
-                  Stock disponible ({selectedStock} ud.)
-                </span>
-              ) : (
-                <span className="text-red-600 font-bold">Agotado en esta talla</span>
-              )}
-            </div>
-
-            <div className="grid grid-cols-5 gap-2">
-              {availableVariants.map((v) => {
-                const isSelected = selectedSize === v.size;
-                const isOut = v.stock === 0;
-
-                return (
-                  <button
-                    key={v.size}
-                    disabled={isOut}
-                    onClick={() => setSelectedSize(v.size)}
-                    className={`py-3 text-xs font-bold rounded-xs transition-all flex flex-col items-center justify-center ${
-                      isSelected
-                        ? 'bg-brand-terracotta text-white border-2 border-brand-terracotta shadow-xs'
-                        : isOut
-                        ? 'bg-warm-sand text-warm-muted border border-warm-border opacity-40 cursor-not-allowed line-through'
-                        : 'bg-white text-warm-dark border border-warm-border hover:border-brand-terracotta'
-                    }`}
-                  >
-                    <span>{v.size}</span>
-                    <span className="text-[9px] font-normal opacity-80">
-                      {isOut ? 'Agotado' : `${v.stock} ud`}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Add to Cart CTA */}
-          <div className="space-y-3 pt-2">
-            <button
-              onClick={handleAddToCart}
-              disabled={isSelectedOutOfStock}
-              className={`w-full py-4 font-bold text-xs tracking-editorial uppercase flex items-center justify-center gap-3 rounded-xs shadow-md transition-all ${
-                isSelectedOutOfStock
-                  ? 'bg-warm-sand text-warm-muted cursor-not-allowed'
-                  : 'bg-brand-terracotta text-white hover:bg-brand-terracottaDark transform hover:-translate-y-0.5'
-              }`}
-            >
-              <ShoppingBag size={18} />
-              <span>{isSelectedOutOfStock ? 'Talla Agotada' : 'Añadir a la Bolsa'}</span>
+          <div className="mt-7 hidden gap-3 sm:flex">
+            <button onClick={addToBag} disabled={soldOut} className="btn btn-primary flex-1 !min-h-[56px] text-[14px]">
+              <ShoppingBag size={18} /> {soldOut ? 'Agotado' : ready ? 'Añadir a la bolsa' : 'Añadir a la bolsa'}
             </button>
           </div>
 
-          {/* Guarantees Reales */}
-          <div className="bg-warm-card p-4 border border-warm-border rounded-xs space-y-3 text-xs text-warm-muted shadow-xs">
-            <div className="flex items-center gap-3">
-              <Truck size={16} className="text-brand-terracotta" />
-              <span>Entrega local y recogida disponible en Málaga</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <RotateCcw size={16} className="text-brand-terracotta" />
-              <span>Derecho de desistimiento y devolución en 14 días naturales</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <ShieldCheck size={16} className="text-brand-terracotta" />
-              <span>Precios con IVA incluido • Pago seguro en mano o con PayPal</span>
-            </div>
-          </div>
-
+          <ul className="mt-8 divide-y divide-line rounded-lg border border-line bg-paper">
+            <Info icon={Truck} title="Envío y pago">
+              {delivery.enabled && <p>Envío a domicilio: {eur(delivery.cost)}, en 2-4 días laborables a {SITE_CONFIG.shipping.shipsTo}. Pago con PayPal.</p>}
+              {meetup.enabled && <p className="mt-2">Quedar en persona en {SITE_CONFIG.brand.city}: sin coste, y pagas en mano o con PayPal.</p>}
+            </Info>
+            <Info icon={RotateCcw} title="Cambios y devoluciones">
+              <p>Tienes {SITE_CONFIG.legal.withdrawalDays} días naturales para desistir de la compra desde que lo recibes. <Link href="/envios-devoluciones" className="underline underline-offset-2">Cómo hacerlo</Link>.</p>
+            </Info>
+          </ul>
         </div>
-
       </div>
 
-      {/* Sticky Buy Bar en Móvil */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-warm-border p-3.5 z-40 flex items-center justify-between gap-4 shadow-lg">
-        <div>
-          <span className="font-display text-lg font-bold text-warm-dark block leading-tight">{salePrice.toFixed(2)} €</span>
-          <span className="text-[10px] text-warm-muted uppercase">Talla seleccionada: <strong>{selectedSize}</strong></span>
+      {/* Barra de compra fija en móvil */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-paper/95 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:hidden">
+        <div className="flex items-center gap-3">
+          <div className="min-w-0 flex-1"><p className="truncate text-[13px] text-ink-soft">{p.name}</p><p className="text-[18px] font-bold tabular-nums">{eur(p.salePrice)}</p></div>
+          <button onClick={addToBag} disabled={soldOut} className="btn btn-primary shrink-0">{soldOut ? 'Agotado' : size ? `Añadir · ${size}` : 'Elegir talla'}</button>
         </div>
-        <button
-          onClick={handleAddToCart}
-          disabled={isSelectedOutOfStock}
-          className={`py-3 px-6 font-bold text-xs tracking-editorial uppercase flex items-center gap-2 rounded-xs shadow-md transition-all ${
-            isSelectedOutOfStock
-              ? 'bg-warm-sand text-warm-muted cursor-not-allowed'
-              : 'bg-brand-terracotta text-white active:scale-98'
-          }`}
-        >
-          <ShoppingBag size={15} />
-          <span>{isSelectedOutOfStock ? 'Agotada' : 'Añadir'}</span>
-        </button>
       </div>
     </div>
+  );
+}
+
+function Info({ icon: Icon, title, children }) {
+  return (
+    <li>
+      <details className="group">
+        <summary className="flex min-h-[56px] cursor-pointer list-none items-center gap-3 px-5 text-[15px] font-semibold [&::-webkit-details-marker]:hidden">
+          <Icon size={18} className="text-terracotta-deep" /> {title}
+          <ChevronDown size={18} className="ml-auto transition-transform duration-200 group-open:rotate-180" />
+        </summary>
+        <div className="px-5 pb-5 text-[15px] leading-relaxed text-ink-soft">{children}</div>
+      </details>
+    </li>
   );
 }

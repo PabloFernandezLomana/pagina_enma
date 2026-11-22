@@ -1,4 +1,12 @@
 **/node_modules
 **/dist
+**/.next
 **/.env
 **/.env.local
+**/.env.*.local
+**/.firebase
+**/*.log
+**/serviceAccount*.json
+**/data_catalog.json
+**/backups/
+.DS_Store

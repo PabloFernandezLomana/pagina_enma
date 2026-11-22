@@ -1,0 +1,44 @@
+/* tokens.css — FUENTE ÚNICA de diseño (raíz). Sincronizar con: node scripts/sync-shared.mjs
+   Colores como canales RGB para poder usar opacidad: rgb(var(--c-ink) / .5) */
+:root {
+  /* Tienda: crema + terracota */
+  --c-cream: 250 246 240;
+  --c-paper: 255 252 247;
+  --c-sand: 238 228 214;
+  --c-line: 226 214 198;
+  --c-ink: 42 36 32;
+  --c-ink-soft: 99 88 79;
+  --c-terracotta: 196 85 45;
+  --c-terracotta-deep: 160 62 28;
+  --c-terracotta-soft: 244 218 205;
+
+  /* Tintes por departamento */
+  --c-mujer: 240 201 192;
+  --c-hombre: 190 208 222;
+  --c-ninos: 243 214 150;
+  --c-deporte: 188 208 182;
+  --c-accesorios: 222 196 170;
+
+  /* Estados */
+  --c-ok: 47 125 81;
+  --c-warn: 191 128 20;
+  --c-bad: 184 52 52;
+
+  /* Panel: rosa pastel + oliva + azul */
+  --p-pink: 244 194 194;
+  --p-pink-soft: 252 233 233;
+  --p-olive: 178 172 136;
+  --p-blue: 162 194 225;
+  --p-bg: 253 248 247;
+  --p-card: 255 255 255;
+  --p-ink: 45 41 38;
+
+  /* Forma y movimiento */
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 22px;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --shadow-soft: 0 1px 2px rgb(42 36 32 / 0.06), 0 8px 24px rgb(42 36 32 / 0.08);
+  --shadow-lift: 0 2px 4px rgb(42 36 32 / 0.08), 0 18px 40px rgb(42 36 32 / 0.14);
+}

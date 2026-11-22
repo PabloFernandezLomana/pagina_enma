@@ -1,34 +1,44 @@
+// moda-enma-tienda/src/app/layout.js
+import '@fontsource-variable/plus-jakarta-sans';
+import '@fontsource/cormorant-garamond/500.css';
+import '@fontsource/cormorant-garamond/600.css';
+import '@fontsource/cormorant-garamond/500-italic.css';
 import './globals.css';
-import { CartProvider } from '@/context/CartContext';
+import Providers from '@/components/Providers';
+import AnnouncementBar from '@/components/layout/AnnouncementBar';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CartDrawer from '@/components/layout/CartDrawer';
+import CookieNotice from '@/components/layout/CookieNotice';
+import { SITE_CONFIG, siteUrl } from '@/site.config';
 
 export const metadata = {
-  title: 'ModaEnma | Boutique & E-Commerce de Alta Gama',
-  description: 'Colecciones exclusivas de moda femenina, masculina, niños, ropa deportiva y accesorios luxury. Confección contemporánea e inspirada en el minimalismo editorial.',
-  keywords: 'moda, boutique, tienda online, ropa de lujo, ropa deportiva, accesorios, ModaEnma, Zara, Mango',
-  openGraph: {
-    title: 'ModaEnma Boutique Store',
-    description: 'Moda de alta gama, catálogo multicategoría y experiencias 3D.',
-    type: 'website',
-  },
+  metadataBase: new URL(siteUrl()),
+  title: { default: `${SITE_CONFIG.brand.name} · ${SITE_CONFIG.brand.tagline}`, template: `%s · ${SITE_CONFIG.brand.name}` },
+  description: SITE_CONFIG.brand.description,
+  openGraph: { type: 'website', locale: 'es_ES', siteName: SITE_CONFIG.brand.name, title: SITE_CONFIG.brand.name, description: SITE_CONFIG.brand.description },
+  twitter: { card: 'summary_large_image' },
+  alternates: { canonical: '/' },
 };
+
+export const viewport = { themeColor: '#FAF6F0', width: 'device-width', initialScale: 1 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="es">
-      <body className="bg-warm-bg text-warm-dark antialiased selection:bg-brand-terracotta selection:text-white">
-        <CartProvider>
-          <div className="flex flex-col min-h-screen relative bg-warm-bg">
-            <Header />
-            <main className="flex-grow">
-              {children}
-            </main>
-            <Footer />
-            <CartDrawer />
-          </div>
-        </CartProvider>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }} />
+      </head>
+      <body>
+        <a href="#contenido" className="sr-only z-[100] rounded-full bg-ink px-5 py-3 text-cream focus:not-sr-only focus:fixed focus:left-4 focus:top-4">Saltar al contenido</a>
+        <Providers>
+          <AnnouncementBar />
+          <Header />
+          <main id="contenido">{children}</main>
+          <Footer />
+          <CartDrawer />
+          <CookieNotice />
+        </Providers>
       </body>
     </html>
   );

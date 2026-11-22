@@ -1,53 +1,44 @@
-/* tokens.css - Sistema unificado de diseño para ModaEnma (Tienda) y ModaInma (Panel) */
+/* tokens.css — FUENTE ÚNICA de diseño (raíz). Sincronizar con: node scripts/sync-shared.mjs
+   Colores como canales RGB para poder usar opacidad: rgb(var(--c-ink) / .5) */
 :root {
-  /* Marca & Identidad Boutique */
-  --brand-crema: #FAF8F5;
-  --brand-crema-dark: #F3EFEA;
-  --brand-sand: #EAE3D9;
-  --brand-terracotta: #C85A32;
-  --brand-terracotta-dark: #A9431E;
-  --brand-terracotta-light: #F9EBE6;
+  /* Tienda: crema + terracota */
+  --c-cream: 250 246 240;
+  --c-paper: 255 252 247;
+  --c-sand: 238 228 214;
+  --c-line: 226 214 198;
+  --c-ink: 42 36 32;
+  --c-ink-soft: 99 88 79;
+  --c-terracotta: 196 85 45;
+  --c-terracotta-deep: 160 62 28;
+  --c-terracotta-soft: 244 218 205;
 
-  /* Colores funcionales del Panel Stitch */
-  --panel-pink-pastel: #F4C2C2;
-  --panel-pink-soft: #FDECEC;
-  --panel-pink-dark: #8C3A4A;
-  --panel-olive: #B2AC88;
-  --panel-olive-dark: #5C583E;
-  --panel-blue-soft: #A2C2E1;
-  --panel-blue-dark: #2F567F;
-
-  /* Tintes por categoría de la Tienda (accesibles contraste AA) */
-  --tint-mujer: #FDE8EC;
-  --tint-hombre: #E8EEF5;
-  --tint-ninos: #FFF7DF;
-  --tint-deporte: #EFF3E6;
-  --tint-accesorios: #FBECE5;
-
-  /* Neutros compartidos */
-  --color-dark: #2D2926;
-  --color-muted: #7A726A;
-  --color-border: #E5DFD7;
-  --color-surface: #FFFFFF;
-  --color-surface-soft: #FDFCFB;
+  /* Tintes por departamento */
+  --c-mujer: 240 201 192;
+  --c-hombre: 190 208 222;
+  --c-ninos: 243 214 150;
+  --c-deporte: 188 208 182;
+  --c-accesorios: 222 196 170;
 
   /* Estados */
-  --state-success: #2E7D32;
-  --state-warning: #C98A2C;
-  --state-danger: #D9534F;
-  --state-info: #2196F3;
+  --c-ok: 47 125 81;
+  --c-warn: 191 128 20;
+  --c-bad: 184 52 52;
 
-  /* Tipografías */
-  --font-display: 'Cormorant Garamond', Georgia, serif;
-  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  /* Panel: rosa pastel + oliva + azul */
+  --p-pink: 244 194 194;
+  --p-pink-soft: 252 233 233;
+  --p-olive: 178 172 136;
+  --p-blue: 162 194 225;
+  --p-bg: 253 248 247;
+  --p-card: 255 255 255;
+  --p-ink: 45 41 38;
 
-  /* Radios & Sombras */
-  --radius-xs: 4px;
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --radius-full: 9999px;
-  --shadow-subtle: 0 2px 8px rgba(45, 41, 38, 0.05);
-  --shadow-card: 0 4px 16px rgba(45, 41, 38, 0.08);
+  /* Forma y movimiento */
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 22px;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --shadow-soft: 0 1px 2px rgb(42 36 32 / 0.06), 0 8px 24px rgb(42 36 32 / 0.08);
+  --shadow-lift: 0 2px 4px rgb(42 36 32 / 0.08), 0 18px 40px rgb(42 36 32 / 0.14);
 }
-
