@@ -2,7 +2,8 @@
 import Link from 'next/link';
 import { getAdminDb } from '@/lib/firebaseAdmin';
 import { eur } from '@/lib/format';
-import { SITE_CONFIG, hasValue } from '@/site.config';
+import { SITE_CONFIG, whatsappLink } from '@/site.config';
+import { meetupWhatsAppText } from '@/lib/emailTemplates';
 import { CheckCircle2, Clock } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -18,7 +19,8 @@ export default async function OrderPage(props) {
     const snap = await db.collection('orders').doc(params.id).get();
     if (snap.exists && snap.data().accessToken === searchParams.t) order = snap.data();
   }
-  const wa = hasValue(SITE_CONFIG.brand.whatsapp) ? `https://wa.me/${SITE_CONFIG.brand.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(`Hola, soy ${order?.clientName || ''} y escribo por mi pedido ${params.id}`)}` : '';
+  const meetup = order?.shippingMethod === 'meetup';
+  const wa = whatsappLink(meetup ? meetupWhatsAppText(order) : `Hola, soy ${order?.clientName || ''} y escribo por mi pedido ${params.id}`);
 
   if (!order && !isDemo) {
     return (
@@ -45,12 +47,11 @@ export default async function OrderPage(props) {
           <div className="mt-8 rounded-lg border border-line bg-paper p-6">
             <h2 className="text-[17px] font-bold">Qué pasa ahora</h2>
             <p className="mt-2 text-[16px] leading-relaxed text-ink-soft">
-              {cash
-                ? `Te escribiremos al ${order.clientPhone} o a ${order.clientEmail} para quedar. Pagas ${eur(order.total)} en mano cuando lo recibas.`
-                : order.shippingMethod === 'meetup'
-                  ? `Hemos recibido tu pago. Te escribiremos al ${order.clientPhone} para quedar en ${SITE_CONFIG.brand.city}.`
-                  : `Hemos recibido tu pago. Lo preparamos y lo enviamos a ${order.clientAddress} (2-4 días laborables). Te avisaremos cuando salga.`}
+              {meetup
+                ? `${cash ? `Pagas ${eur(order.total)} en mano cuando nos veamos. ` : 'Hemos recibido tu pago. '}Quedamos en ${SITE_CONFIG.brand.city}: el día, la hora y el lugar los acordamos por WhatsApp, cuando mejor nos venga a los dos.`
+                : `Hemos recibido tu pago. Lo preparamos y lo enviamos a ${order.clientAddress} (2-4 días laborables). Te avisaremos por correo cuando salga.`}
             </p>
+            <p className="mt-3 text-[15px] font-semibold">Estado: {order.status}{order.trackingCode ? ` · ${order.carrier ? `${order.carrier}: ` : 'Seguimiento: '}${order.trackingCode}` : ''}</p>
           </div>
           <ul className="mt-6 divide-y divide-line rounded-lg border border-line bg-paper px-6">
             {order.items.map((i, k) => (
@@ -63,8 +64,8 @@ export default async function OrderPage(props) {
       )}
 
       <div className="mt-8 flex flex-wrap gap-3">
-        <Link href="/" className="btn btn-primary">Seguir mirando</Link>
-        {wa && <a href={wa} target="_blank" rel="noopener noreferrer" className="btn btn-ghost">Escribirnos por WhatsApp</a>}
+        <Link href="/" className={meetup && wa ? 'btn btn-ghost' : 'btn btn-primary'}>Seguir mirando</Link>
+        {wa && <a href={wa} target="_blank" rel="noopener noreferrer" className={meetup ? 'btn btn-primary' : 'btn btn-ghost'}>{meetup ? 'Escribirme para quedar' : 'Escribirnos por WhatsApp'}</a>}
       </div>
     </section>
   );

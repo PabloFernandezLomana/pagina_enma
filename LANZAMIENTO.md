@@ -59,6 +59,26 @@ Cómo funciona: al confirmar, el servidor crea el pedido y **reserva el stock** 
 
 **Cuotas gratuitas a vigilar:** Firestore Spark da 50.000 lecturas y 20.000 escrituras al día; Cloudflare Workers, 100.000 peticiones al día. Sobra para empezar; el panel de cada servicio muestra el consumo.
 
+## 5b. Correos al cliente y WhatsApp (sin coste)
+
+**Qué hace:**
+- Al comprar (pago en mano al crear el pedido; PayPal cuando el pago se confirma) el cliente recibe un correo con su pedido y el total. Si elige **quedar en persona**, el correo le dice que quedáis en Málaga y que **día, hora y lugar se acuerdan por WhatsApp**, con un botón que abre tu WhatsApp (+34 610 71 29 27) con el mensaje ya escrito.
+- Al cambiar el estado desde el panel (Preparando, Enviado, Entregado, Cancelado) se le avisa por correo. En "Enviado" va el código de seguimiento que escribas en el pedido. Hay una casilla para no avisar si no quieres.
+- En la ficha de cada prenda hay un enlace "¿Dudas con la talla o las medidas? Pregúntame por WhatsApp" con el nombre, la talla elegida y el enlace.
+- El panel marca "Sin talla M" y "Última: S" en cada producto, y el aviso de stock bajo salta con 1 unidad o menos.
+- Si un correo falla, **la compra no se rompe**: el pedido muestra un aviso en el panel y le escribes por WhatsApp.
+- Tú no recibes correos ni WhatsApp automáticos de los pedidos (se deja para más adelante). Los ves al instante en el panel, en "Pedidos".
+
+**Puesta en marcha del correo con Brevo (gratis, 300 al día, sin dominio propio):**
+1. Crea cuenta en brevo.com → *Senders, Domains & Dedicated IPs* → *Senders* → añade tu correo de tienda y confírmalo (te llega un enlace). Sin dominio propio, los correos pueden caer en spam más a menudo; con dominio (y registros SPF/DKIM que Brevo te indica) mejora mucho.
+2. *SMTP & API* → *API Keys* → crea una clave.
+3. En Cloudflare (Worker `modaenma-tienda` → Settings → Variables and Secrets): secreto `BREVO_API_KEY`; variable `EMAIL_FROM` (el correo que verificaste); opcional `EMAIL_FROM_NAME` y `EMAIL_REPLY_TO`.
+4. Brevo añade siempre "Sent with Brevo" en el plan gratuito. Cuando tengas dominio puedes pasar a **Resend** cambiando `RESEND_API_KEY` en lugar de `BREVO_API_KEY` (y `EMAIL_PROVIDER=resend`); el código ya lo soporta.
+5. **Para que el panel pueda avisar por correo:** en GitHub → Settings → Secrets and variables → Actions, crea el secreto `VITE_STORE_URL` con la dirección de la tienda (sin barra final, p. ej. `https://modaenma-tienda.TUUSUARIO.workers.dev`). Vuelve a ejecutar el workflow del panel (o sube cualquier cambio a `pagina_inma/`). En local, ponlo también en `pagina_inma/.env`.
+6. El panel puede llamar a la tienda sin configurar nada más si está en `https://moda-enma.web.app` o `.firebaseapp.com`. Si usas otro dominio para el panel, añádelo en Cloudflare como variable `PANEL_ORIGIN` (varios separados por comas).
+
+**Qué NO está hecho (por decisión tuya):** chatbot de WhatsApp, aviso automático de pedidos a tu móvil y horarios fijos para quedar. Para avisarte a ti, las opciones estudiadas son Telegram (gratis) o WhatsApp oficial de Meta (de pago por mensaje).
+
 ## 6. Pruebas que debes hacer antes de abrir al público
 - [ ] Compra de prueba con PayPal **Sandbox**: aparece en el panel como "PayPal · pagado" y el stock baja.
 - [ ] Abandonar el pago de PayPal: el pedido no queda como pagado y el stock se libera.
@@ -66,6 +86,9 @@ Cómo funciona: al confirmar, el servidor crea el pedido y **reserva el stock** 
 - [ ] Dos personas compran la última unidad a la vez: solo una lo consigue.
 - [ ] Cancelar un pedido en el panel devuelve el stock a la tienda.
 - [ ] Subir un producto con 3 fotos desde el móvil: se ve en la tienda sin recargar el panel.
+- [ ] Compra de prueba (pago en mano + quedar en persona): llega el correo al cliente con el botón de WhatsApp, y el botón abre tu chat con el mensaje escrito.
+- [ ] Cambiar un pedido a "Enviado" con código de seguimiento: llega el correo con el código. Probar también con un correo inventado: debe salir el aviso de que no se pudo enviar, sin romper nada.
+- [ ] Desde la ficha de una prenda, el enlace de WhatsApp abre tu chat con el nombre y la talla.
 - [ ] Crear una factura y abrir el PDF.
 - [ ] Desde un navegador sin sesión, `firestore` no deja leer `orders`, `clients` ni `products_private`.
 

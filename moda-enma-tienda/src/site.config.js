@@ -19,7 +19,7 @@ export const SITE_CONFIG = {
     nif: '',
     address: '',
     phone: '',
-    whatsapp: '', // solo dígitos con prefijo, p. ej. '34600111222'
+    whatsapp: '34610712927', // solo dígitos con prefijo, p. ej. '34600111222'
     email: '',
   },
 
@@ -83,6 +83,13 @@ export function shippingCostFor(method, subtotal) {
 export function allowedPayments(method) {
   const m = SITE_CONFIG.shipping.methods[method];
   return m && m.enabled ? m.payments : [];
+}
+
+/** Enlace wa.me al WhatsApp de la tienda con un mensaje ya escrito. Devuelve '' si no hay número. */
+export function whatsappLink(text = '') {
+  const n = String(SITE_CONFIG.brand.whatsapp || '').replace(/\D/g, '');
+  if (!n) return '';
+  return `https://wa.me/${n}${text ? `?text=${encodeURIComponent(text)}` : ''}`;
 }
 
 export function siteUrl() {

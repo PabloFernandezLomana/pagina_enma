@@ -2,7 +2,7 @@
 import { useMemo } from 'react';
 import { ShoppingBag, AlertTriangle, Wallet, TrendingUp, Eye, Plus } from 'lucide-react';
 import { useData } from '../lib/data';
-import { eur, timeAgo, totalStock } from '../lib/format';
+import { eur, timeAgo, totalStock, LOW_STOCK_DEFAULT } from '../lib/format';
 import { salesByDay, monthSummary, productRanking, funnel } from '../lib/stats';
 import { BarChart } from '../components/charts';
 import { Empty } from '../components/ui';
@@ -33,7 +33,7 @@ export default function Inicio({ go }) {
   const fun = useMemo(() => funnel(stats, orders, 30), [stats, orders]);
   const toPrepare = orders.filter((o) => o.status === 'Pendiente' || o.status === 'Preparando');
   const toCollect = orders.filter((o) => o.paymentMethod === 'cash' && o.paymentStatus === 'pending' && o.status !== 'Cancelado');
-  const low = products.filter((p) => p.active !== false && totalStock(p) <= (p.lowStockThreshold ?? 3));
+  const low = products.filter((p) => p.active !== false && totalStock(p) <= (p.lowStockThreshold ?? LOW_STOCK_DEFAULT));
   const hour = new Date().getHours();
   const greet = hour < 14 ? 'Buenos días' : hour < 21 ? 'Buenas tardes' : 'Buenas noches';
 

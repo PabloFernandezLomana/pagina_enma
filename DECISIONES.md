@@ -13,3 +13,7 @@
 11. **Despliegue sin tarjeta (21-22 nov 2026):** Firebase App Hosting y Cloud Storage exigen plan Blaze (tarjeta). La tienda pasa a **Cloudflare Workers** (Next 15 + OpenNext), las fotos a **Cloudinary** (subida directa desde el panel con un preset *unsigned*), y el panel sigue en Firebase Hosting (Spark). La tienda accede a Firestore por **API REST** (sin `firebase-admin`).
 12. **Catálogo en caché en memoria** (30 s por instancia) en vez de `unstable_cache`, para no gastar lecturas gratuitas de Firestore.
 13. **Imágenes sin optimizador de Next** (`unoptimized`): llegan ya comprimidas a webp desde el panel.
+14. **Correo al cliente con Brevo (Resend soportado)** por `fetch` REST: confirmación y cambios de estado. Idempotente (un solo correo aunque PayPal avise dos veces) y a prueba de fallos (un error de correo nunca rompe una compra).
+15. **Quedar en persona = Málaga + WhatsApp, sin horarios fijos.** Día, hora y lugar se acuerdan por WhatsApp. No hay chatbot ni selector de franjas.
+16. **El panel pide los correos a la tienda** (`/api/admin/order-status-email`) con su sesión de administradora, porque el panel es una web estática sin servidor. La tienda comprueba el permiso de administrador con Google y limita el acceso por origen (CORS).
+17. **Aviso de pedidos al móvil del dueño: aplazado.** La API oficial de WhatsApp cobra los mensajes que inicia la tienda; alternativa gratuita y fiable: Telegram.

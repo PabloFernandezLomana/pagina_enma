@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Search, Plus, Minus, Camera, X, ArrowLeft, Trash2, ChevronLeft } from 'lucide-react';
 import { useData, BusinessError } from '../lib/data';
-import { eur, totalStock, unitsLabel, DEPARTMENTS, PRODUCT_TYPES, TAGS, SIZE_PRESETS, dept } from '../lib/format';
+import { eur, totalStock, unitsLabel, DEPARTMENTS, PRODUCT_TYPES, TAGS, SIZE_PRESETS, dept, LOW_STOCK_DEFAULT, sizeAlerts } from '../lib/format';
 import { compressImage } from '../lib/images';
 import { Sheet, SheetBody, Field, Toggle, Empty, useConfirm } from '../components/ui';
 
@@ -192,7 +192,7 @@ export default function Productos({ intent, clearIntent }) {
   }, [intent]); // eslint-disable-line
 
   const list = useMemo(() => products.filter((p) => {
-    if (filter === 'poco' && totalStock(p) > (p.lowStockThreshold ?? 3)) return false;
+    if (filter === 'poco' && totalStock(p) > (p.lowStockThreshold ?? LOW_STOCK_DEFAULT)) return false;
     if (filter === 'ocultos' && p.active !== false) return false;
     if (!['todos', 'poco', 'ocultos'].includes(filter) && p.department !== filter) return false;
     const t = q.trim().toLowerCase();
@@ -218,7 +218,8 @@ export default function Productos({ intent, clearIntent }) {
         <div className="grid-cards" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 156px), 1fr))' }}>
           {list.map((p, i) => {
             const stock = totalStock(p);
-            const low = stock <= (p.lowStockThreshold ?? 3);
+            const low = stock <= (p.lowStockThreshold ?? LOW_STOCK_DEFAULT);
+            const al = sizeAlerts(p);
             return (
               <div key={p.id} className={`pcard rise${p.active === false ? ' off' : ''}`} style={{ '--i': Math.min(i, 10) }}>
                 <button className="ph" onClick={() => setEditing(p)} aria-label={`Editar ${p.name}`}>
@@ -230,6 +231,12 @@ export default function Productos({ intent, clearIntent }) {
                   <b style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</b>
                   <div className="row between"><b className="num">{eur(p.salePrice)}</b><span className="muted small num">{unitsLabel(stock)}</span></div>
                   <div className={`stockbar${stock === 0 ? ' out' : low ? ' low' : ''}`}><i style={{ width: `${Math.min(100, (stock / 20) * 100)}%` }} /></div>
+                  {(al.out.length > 0 || al.last.length > 0) && (
+                    <div className="tags" style={{ position: 'static', flexWrap: 'wrap', gap: 4 }}>
+                      {al.out.length > 0 && <span className="badge b-bad">Sin talla {al.out.join(', ')}</span>}
+                      {al.last.length > 0 && <span className="badge b-warn">Última: {al.last.join(', ')}</span>}
+                    </div>
+                  )}
                   <div className="row between" style={{ marginTop: 6 }}><span className="small">Visible</span><Toggle checked={p.active !== false} onChange={(v) => actions.setActive(p.id, v)} label={`Mostrar ${p.name} en la tienda`} /></div>
                 </div>
               </div>

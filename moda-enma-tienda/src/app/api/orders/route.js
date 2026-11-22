@@ -6,6 +6,7 @@ import { createPayPalOrder, paypalConfigured } from '@/lib/paypal.server';
 import { rateLimit, clientIp } from '@/lib/rateLimit';
 import { getAdminDb } from '@/lib/firebaseAdmin';
 import { releaseOrder } from '@/lib/orders.server';
+import { sendOrderConfirmation } from '@/lib/notify.server';
 
 export const runtime = 'nodejs';
 
@@ -70,6 +71,8 @@ export async function POST(request) {
         return NextResponse.json({ error: 'No hemos podido iniciar el pago con PayPal. Inténtalo de nuevo.' }, { status: 502 });
       }
     }
+    // Pago en mano: el pedido ya es firme, avisamos al cliente. (PayPal: se avisa cuando el pago se confirma.)
+    if (!order.isPaypal && !order.demo) await sendOrderConfirmation(order.orderId);
     return NextResponse.json({
       success: true,
       demo: order.demo,
