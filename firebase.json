@@ -1,6 +1,5 @@
 {
   "firestore": { "rules": "firestore.rules", "indexes": "firestore.indexes.json" },
-  "storage": { "rules": "storage.rules" },
   "hosting": {
     "public": "pagina_inma/dist",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],

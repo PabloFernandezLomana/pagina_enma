@@ -1,6 +1,5 @@
 // moda-enma-tienda/src/lib/catalog.server.js
 // Lectura del catálogo en servidor. NUNCA devuelve costPrice (vive en products_private).
-import { unstable_cache } from 'next/cache';
 import { getAdminDb, isDemoAllowed } from './firebaseAdmin';
 import { DEMO_PRODUCTS } from '@/data/demoProducts';
 import { toPublicProduct } from './productShape';
@@ -11,7 +10,14 @@ async function fetchAllFromFirestore() {
   return snap.docs.map((doc) => toPublicProduct(doc.id, doc.data()));
 }
 
-const cachedFetch = unstable_cache(fetchAllFromFirestore, ['catalog-v2'], { revalidate: 30, tags: ['products'] });
+// Caché en memoria de 30 s (por instancia): protege las lecturas gratuitas de Firestore.
+let cache = { at: 0, data: null };
+async function cachedFetch() {
+  if (cache.data && Date.now() - cache.at < 30_000) return cache.data;
+  const data = await fetchAllFromFirestore();
+  cache = { at: Date.now(), data };
+  return data;
+}
 
 const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 

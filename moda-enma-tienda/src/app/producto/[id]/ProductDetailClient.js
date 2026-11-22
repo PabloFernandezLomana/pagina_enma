@@ -3,11 +3,10 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { doc, onSnapshot } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { ShoppingBag, Truck, RotateCcw, ChevronDown, Check } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
-import { getClientDb } from '@/lib/firebase.client';
+import { getClientFirestore } from '@/lib/firebase.client';
 import { toPublicProduct, totalStock } from '@/lib/productShape';
 import { getDepartment } from '@/lib/categories';
 import { eur } from '@/lib/format';
@@ -25,9 +24,14 @@ export default function ProductDetailClient({ initial }) {
 
   // Stock en tiempo real: si cambias el stock en el panel, esta ficha se actualiza sola.
   useEffect(() => {
-    const db = getClientDb();
-    if (!db) return;
-    return onSnapshot(doc(db, 'products', initial.id), (s) => { if (s.exists() && s.data().active) setP(toPublicProduct(s.id, s.data())); }, () => {});
+    let unsub = () => {};
+    let cancelled = false;
+    getClientFirestore().then((c) => {
+      if (!c || cancelled) return;
+      const { db, fs } = c;
+      unsub = fs.onSnapshot(fs.doc(db, 'products', initial.id), (s) => { if (s.exists() && s.data().active) setP(toPublicProduct(s.id, s.data())); }, () => {});
+    });
+    return () => { cancelled = true; unsub(); };
   }, [initial.id]);
 
   const variant = p.variants.find((v) => v.size === size);

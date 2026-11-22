@@ -1,4 +1,4 @@
-# ModaEnma — Tienda (Next.js 14)
+# ModaEnma — Tienda (Next.js 15 en Cloudflare Workers)
 
 Tienda pública. Lee el catálogo de Firestore (servidor + tiempo real en el navegador) y crea los pedidos **solo desde el servidor** (`/api/orders`).
 
@@ -7,6 +7,8 @@ npm install
 cp .env.example .env.local     # claves de Firebase, PayPal y cuenta de servicio
 npm run dev                    # http://localhost:3000
 npm run build
+npm run preview    # la ejecuta como en Cloudflare (usa .dev.vars)
+npm run deploy     # compila y publica en Cloudflare (tras `npx wrangler login`)
 ```
 
 - Sin credenciales de administrador, en desarrollo se muestra un catálogo de prueba y los pedidos en mano devuelven un éxito "PRUEBA" que no se guarda. En producción nunca hay catálogo falso.

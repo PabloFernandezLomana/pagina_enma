@@ -1,7 +1,6 @@
 // moda-enma-tienda/src/lib/orders.server.js
 // Creación de pedidos: TODO dentro de una transacción (lecturas primero, validación y precios
 // desde la base de datos, stock descontado de forma atómica, número de pedido secuencial).
-import { randomBytes } from 'node:crypto';
 import { getAdminDb, FieldValue, isDemoAllowed } from './firebaseAdmin';
 import { DEMO_PRODUCTS } from '@/data/demoProducts';
 import { SITE_CONFIG, shippingCostFor, allowedPayments } from '@/site.config';
@@ -57,7 +56,7 @@ export async function createOrder(data) {
     return { demo: true, orderId: 'PRUEBA-0000', accessToken: '', total: round2(subtotal + shippingCost), subtotal, shippingCost, paypalOrderId: null };
   }
 
-  const accessToken = randomBytes(16).toString('hex');
+  const accessToken = [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, '0')).join('');
   const now = new Date();
   const phoneDigits = data.phone.replace(/\D/g, '');
   const clientId = `cli-${phoneDigits}`;

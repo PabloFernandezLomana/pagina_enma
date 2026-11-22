@@ -2,25 +2,28 @@
 // moda-enma-tienda/src/components/ui/LiveGrid.js
 // Rejilla con filtros instantáneos y stock EN TIEMPO REAL (si Firebase del navegador está configurado).
 import { useEffect, useMemo, useState } from 'react';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import ProductCard from './ProductCard';
-import { getClientDb } from '@/lib/firebase.client';
+import { getClientFirestore } from '@/lib/firebase.client';
 import { toPublicProduct, isSoldOut } from '@/lib/productShape';
 
 export function useLiveProducts(initial, filter) {
   const [list, setList] = useState(initial);
   useEffect(() => {
-    const db = getClientDb();
-    if (!db) return;
-    const unsub = onSnapshot(
-      query(collection(db, 'products'), where('active', '==', true)),
-      (snap) => {
-        const all = snap.docs.map((d) => toPublicProduct(d.id, d.data()));
-        setList(filter ? all.filter(filter) : all);
-      },
-      () => {}
-    );
-    return unsub;
+    let unsub = () => {};
+    let cancelled = false;
+    getClientFirestore().then((c) => {
+      if (!c || cancelled) return;
+      const { db, fs } = c;
+      unsub = fs.onSnapshot(
+        fs.query(fs.collection(db, 'products'), fs.where('active', '==', true)),
+        (snap) => {
+          const all = snap.docs.map((d) => toPublicProduct(d.id, d.data()));
+          setList(filter ? all.filter(filter) : all);
+        },
+        () => {}
+      );
+    });
+    return () => { cancelled = true; unsub(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return list;

@@ -2,15 +2,18 @@
 
 Documento honesto: qué está hecho, qué está **comprobado** y qué falta por tu parte.
 
-## 1. Qué hay
+## 1. Qué hay (todo sin tarjeta)
 
 | Pieza | Carpeta | Tecnología | Dónde se publica |
 |---|---|---|---|
-| Tienda pública | `moda-enma-tienda/` | Next.js 14 | Firebase App Hosting (plan Blaze) |
-| Panel privado | `pagina_inma/` | React 19 + Vite (PWA) | Firebase Hosting |
-| Datos | Firestore + Storage + Auth | mismo proyecto Firebase | — |
+| Tienda pública | `moda-enma-tienda/` | Next.js 15 | **Cloudflare Workers** (plan gratuito) |
+| Panel privado | `pagina_inma/` | React 19 + Vite (PWA) | **Firebase Hosting** (plan Spark) |
+| Datos y acceso | Firestore + Authentication | proyecto Firebase `moda-enma` (Spark) | — |
+| Fotos | Cloudinary (plan gratuito) | el panel las sube; la tienda las muestra | — |
 
-**Fuente única de configuración:** `site.config.js` y `tokens.css` (raíz). Tras editarlos ejecuta `node scripts/sync-shared.mjs` para copiarlos a la tienda y al panel.
+**Fuente única de configuración:** `site.config.js` y `tokens.css` (raíz). Tras editarlos ejecuta `node scripts/sync-shared.mjs`.
+
+La tienda no usa `firebase-admin` (no funciona en Cloudflare): habla con Firestore por su API REST con la cuenta de servicio (`src/lib/firebaseAdmin.js`). Los scripts de `scripts/` (set-admin, seed-demo, backup) sí lo usan, pero solo se ejecutan en tu ordenador.
 
 ## 2. Reglas de negocio implementadas
 - Pago: **solo PayPal o pago en mano**.
@@ -19,31 +22,42 @@ Documento honesto: qué está hecho, qué está **comprobado** y qué falta por 
 - Precios con IVA incluido; las facturas **no desglosan IVA** (`invoices.showVatBreakdown: false` en `site.config.js`).
 - El precio de compra (coste) vive en `products_private`: **nunca** es público.
 
-## 3. Estado verificado (en mi entorno, sin Firebase real)
-- ✅ Tienda compila (`next build`) y se ve bien en escritorio y móvil con el catálogo de prueba.
-- ✅ Panel compila (`vite build`) y probado de punta a punta en modo demo: subir producto con foto, editar tallas/stock, cambiar estado de pedido, venta manual con descuento de stock, factura PDF.
-- ✅ API de pedidos: valida datos, rechaza envío sin dirección, rechaza PayPal si no está configurado, `/api/products` (insegura) eliminada, 404 reales.
-- ⚠️ **NO probado contra Firestore real ni PayPal real**: no tengo acceso a tu proyecto ni pude arrancar el emulador (red bloqueada). La lógica de transacciones, las reglas y el flujo PayPal están escritos siguiendo la documentación, pero **tienes que hacer las pruebas del apartado 6 en PayPal Sandbox antes de cobrar nada real**.
+## 3. Estado verificado (en mi entorno)
+- ✅ Tienda y panel compilan. La tienda también compila como Worker de Cloudflare (1,3 MB comprimido; el límite gratuito es 3 MB) y responde en un Cloudflare local (`wrangler dev`): páginas, buscador, API de pedidos de prueba.
+- ✅ La capa de pedidos se probó contra un Firestore **simulado** (misma API REST): pedido con número secuencial, coste privado, stock, dos compradores a la vez por la última unidad (solo uno la consigue), pedido PayPal y liberación de stock, validaciones.
+- ✅ Panel probado de punta a punta en modo demo.
+- ⚠️ **NO probado contra Firestore real, Cloudinary real ni PayPal real** (sin acceso desde mi entorno). Haz las pruebas del apartado 6 antes de cobrar.
+- ⚠️ **Límite de CPU del plan gratuito de Cloudflare: 10 ms por petición.** Una página de Next.js puede acercarse. No he podido medirlo. Si en producción ves errores "1102" o páginas lentas, la solución es el plan de pago de Workers (5 $/mes, requiere tarjeta) o simplificar páginas. Compruébalo con la tienda abierta unos días.
 
-## 4. Puesta en marcha (una sola vez)
+## 4. Puesta en marcha
 
-1. **Firebase**: crea un proyecto en console.firebase.google.com. Activa Firestore (modo producción), Storage y Authentication (correo/contraseña). Pasa a plan **Blaze** (necesario para App Hosting; con tu tráfico el coste suele ser ~0 €).
-2. **Cuenta del panel**: Authentication → Usuarios → Añadir usuario (tu correo y contraseña).
-3. **`.firebaserc`**: sustituye `REEMPLAZA-CON-TU-PROJECT-ID` por el ID de tu proyecto.
-4. **Reglas**: `npm i -g firebase-tools`, `firebase login`, y desde la raíz: `firebase deploy --only firestore:rules,storage`.
-5. **Administrador**: descarga una clave de cuenta de servicio (Configuración → Cuentas de servicio), guárdala fuera del repo y en `moda-enma-tienda/.env.local` pon `FIREBASE_SERVICE_ACCOUNT_KEY=` con su contenido (en una línea o en base64). Luego, en `moda-enma-tienda/`: `npm run set-admin -- tucorreo@ejemplo.com`. Cierra sesión y entra de nuevo en el panel.
-6. **Productos de prueba**: `npm run seed-demo` (en `moda-enma-tienda/`). Se borran desde el panel (Ajustes → Borrar productos de prueba) o con `npm run purge-demo`.
-7. **Panel**: copia `pagina_inma/.env.example` a `.env`, rellena las 6 claves de Firebase (app web) y ejecuta `npm run build` y, desde la raíz, `firebase deploy --only hosting`.
-8. **Tienda**: rellena `moda-enma-tienda/apphosting.yaml` (claves Firebase públicas y dominio) y crea los secretos de PayPal (`firebase apphosting:secrets:set PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`). Conecta el repo de GitHub en Firebase → App Hosting y elige la carpeta `moda-enma-tienda`.
-9. **Dominio**: cuando lo tengas, ponlo en `site.config.js` (`brand.domain`), ejecuta `node scripts/sync-shared.mjs` y añádelo en App Hosting.
+**Ya hecho por ti:** proyecto Firebase `moda-enma` (Spark), reglas de Firestore, usuario administrador y `set-admin`, productos de prueba.
+
+1. **Cloudinary:** en Settings → Upload → *Upload presets* crea un preset en modo **Unsigned** (limita formatos a imágenes). Apunta tu *Cloud Name* y el nombre del preset.
+2. **Panel** (`pagina_inma/.env`): quita `VITE_FIREBASE_STORAGE_BUCKET` y añade
+   `VITE_CLOUDINARY_CLOUD_NAME=` y `VITE_CLOUDINARY_UPLOAD_PRESET=`. Luego `npm run build` y, desde la raíz, `firebase deploy --only firestore:rules,hosting`.
+   (Si `firebase deploy` se queja de Storage, comprueba que `firebase.json` ya no lo menciona: esta versión lo quita.)
+3. **Tienda en local** (`moda-enma-tienda/.env.local`): igual que antes (claves públicas de Firebase + `FIREBASE_SERVICE_ACCOUNT_KEY`). Quita `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` si quieres. Para ver cómo corre como en Cloudflare: copia las variables a `.dev.vars` (el JSON de la cuenta de servicio entre comillas simples) y ejecuta `npm run preview`.
+4. **Cloudflare** (dash.cloudflare.com → Workers & Pages → Create → *Import a repository*, sin tarjeta):
+   - Repo `pagina_enma`, rama `main` (tras fusionar la rama `launch/modaenma-v2`).
+   - Directorio raíz: `moda-enma-tienda`. Nombre del Worker: `modaenma-tienda` (debe coincidir con `wrangler.jsonc`).
+   - Build command: `npx opennextjs-cloudflare build`. Deploy command: `npx opennextjs-cloudflare deploy`.
+   - **Variables de compilación** (Build → Variables), necesarias porque `NEXT_PUBLIC_*` se incrustan al compilar: `NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID`, `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`, `NEXT_PUBLIC_FIREBASE_APP_ID`, `NEXT_PUBLIC_PAYPAL_CLIENT_ID`, `NEXT_PUBLIC_SITE_URL`.
+   - **Variables y secretos de ejecución** (Settings → Variables and Secrets): las mismas `NEXT_PUBLIC_*` y además, como *Secret*: `FIREBASE_SERVICE_ACCOUNT_KEY` (pega el JSON completo), `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`; y como variable `PAYPAL_ENV` (`sandbox` o `live`).
+   - Alternativa desde tu terminal: `cd moda-enma-tienda && npx wrangler login && npm run deploy`.
+5. **Dominio:** cuando lo tengas, ponlo en `site.config.js` (`brand.domain`), ejecuta `node scripts/sync-shared.mjs`, y añádelo en el Worker (Settings → Domains & Routes). Si compras el dominio en Cloudflare todo queda en el mismo sitio.
+6. **Autorizar el panel:** en Firebase → Authentication → Settings → *Dominios autorizados* añade el dominio del panel (`moda-enma.web.app` ya viene).
+7. **Productos reales:** súbelos desde el panel y borra los de prueba (Ajustes).
 
 ## 5. PayPal (cuando crees la cuenta Business)
-1. developer.paypal.com → Apps & Credentials → crea una app (primero **Sandbox**) → copia Client ID y Secret.
-2. Pon `PAYPAL_ENV=sandbox` y las credenciales (secretos de App Hosting o `.env.local`).
-3. Webhooks → añade `https://TU-DOMINIO/api/paypal/webhook` con los eventos `PAYMENT.CAPTURE.COMPLETED`, `DENIED`, `REFUNDED` y `REVERSED`. Copia el *Webhook ID* a `PAYPAL_WEBHOOK_ID`.
-4. Cuando todo funcione en sandbox: `PAYPAL_ENV=live` con las credenciales **live**.
+1. developer.paypal.com → Apps & Credentials → crea una app (primero **Sandbox**) → Client ID y Secret.
+2. En Cloudflare: `NEXT_PUBLIC_PAYPAL_CLIENT_ID` (variable de compilación y de ejecución), `PAYPAL_CLIENT_SECRET` (secreto), `PAYPAL_ENV=sandbox`. Vuelve a desplegar (el Client ID se incrusta al compilar).
+3. Webhooks → `https://TU-DOMINIO/api/paypal/webhook` con `PAYMENT.CAPTURE.COMPLETED`, `DENIED`, `REFUNDED`, `REVERSED`. Copia el *Webhook ID* a `PAYPAL_WEBHOOK_ID`.
+4. Cuando todo funcione en sandbox: `PAYPAL_ENV=live` con credenciales **live** y nuevo despliegue.
 
-Cómo funciona: al confirmar, el servidor crea el pedido y **reserva el stock** en una transacción; PayPal cobra; el servidor captura el pago y solo entonces lo marca pagado (comprueba importe exacto y moneda). Si el cliente abandona, se libera el stock; si se cierra el navegador a medias, puedes cancelarlo desde el panel.
+Cómo funciona: al confirmar, el servidor crea el pedido y **reserva el stock** en una transacción; PayPal cobra; el servidor captura y solo entonces lo marca pagado (comprueba importe y moneda). Si el cliente abandona, se libera el stock; si cierra el navegador a medias, cancelas el pedido desde el panel.
+
+**Cuotas gratuitas a vigilar:** Firestore Spark da 50.000 lecturas y 20.000 escrituras al día; Cloudflare Workers, 100.000 peticiones al día. Sobra para empezar; el panel de cada servicio muestra el consumo.
 
 ## 6. Pruebas que debes hacer antes de abrir al público
 - [ ] Compra de prueba con PayPal **Sandbox**: aparece en el panel como "PayPal · pagado" y el stock baja.

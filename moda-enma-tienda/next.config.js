@@ -1,12 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,
+  // Las fotos ya llegan comprimidas (webp) desde el panel y se sirven desde Cloudinary.
   images: {
-    formats: ['image/avif', 'image/webp'],
-    remotePatterns: [
-      { protocol: 'https', hostname: 'firebasestorage.googleapis.com' },
-      { protocol: 'https', hostname: 'storage.googleapis.com' },
-    ],
+    unoptimized: true,
+    remotePatterns: [{ protocol: 'https', hostname: 'res.cloudinary.com' }],
   },
   async headers() {
     return [

@@ -8,7 +8,9 @@ import { CheckCircle2, Clock } from 'lucide-react';
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Pedido recibido', robots: { index: false } };
 
-export default async function OrderPage({ params, searchParams }) {
+export default async function OrderPage(props) {
+  const params = await props.params;
+  const searchParams = await props.searchParams;
   const isDemo = searchParams?.demo === '1';
   let order = null;
   const db = getAdminDb();

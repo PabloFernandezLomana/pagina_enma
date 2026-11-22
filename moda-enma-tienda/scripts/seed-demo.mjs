@@ -1,4 +1,4 @@
-// Carga los productos de PRUEBA en Firestore (con sus fotos en Storage).
+// Carga los productos de PRUEBA en Firestore (con las fotos de /public/demo).
 // Uso:  npm run seed-demo      ·  Para quitarlos: npm run purge-demo  (o bórralos desde el panel)
 // import { readFileSync } from 'node:fs';
 // import { getFirestore } from 'firebase-admin/firestore';

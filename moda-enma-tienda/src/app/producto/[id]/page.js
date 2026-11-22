@@ -10,7 +10,8 @@ import { totalStock } from '@/lib/productShape';
 export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }) {
-  const p = await getProduct(params.id);
+  const { id } = await params;
+  const p = await getProduct(id);
   if (!p) return { title: 'Producto no encontrado', robots: { index: false } };
   const desc = p.description.slice(0, 155) || SITE_CONFIG.brand.description;
   return {
@@ -20,7 +21,8 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function ProductPage({ params }) {
-  const product = await getProduct(params.id);
+  const { id } = await params;
+  const product = await getProduct(id);
   if (!product) notFound();
   const related = (await getProducts({ department: product.department })).filter((p) => p.id !== product.id).slice(0, 4);
 

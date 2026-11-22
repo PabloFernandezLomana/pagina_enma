@@ -1,6 +1,6 @@
 // pagina_inma/src/lib/backend.js
 // Capa de datos única. Dos implementaciones con la misma interfaz:
-//  - firebaseBackend: Firestore en tiempo real + Storage (producción)
+//  - firebaseBackend: Firestore en tiempo real + fotos en Cloudinary (producción, sin tarjeta)
 //  - demoBackend: localStorage (solo si VITE_DEMO=1, para probar sin Firebase)
 import { initializeApp } from 'firebase/app';
 import {
@@ -9,7 +9,6 @@ import {
 import {
   getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc, writeBatch, runTransaction,
 } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { DEMO_SEED } from './demoSeed';
 
 const env = import.meta.env;
@@ -19,7 +18,6 @@ const firebaseConfig = {
   apiKey: env.VITE_FIREBASE_API_KEY,
   authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId: env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: env.VITE_FIREBASE_APP_ID,
 };
@@ -39,7 +37,6 @@ function makeFirebaseBackend() {
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
-  const storage = getStorage(app);
 
   return {
     mode: 'firebase',
@@ -81,10 +78,17 @@ function makeFirebaseBackend() {
           set: (col, id, data, merge = false) => t.set(doc(db, col, id), clean(data), { merge }),
         })
       ),
-    async upload(blob, path) {
-      const r = ref(storage, path);
-      await uploadBytes(r, blob, { contentType: blob.type || 'image/webp', cacheControl: 'public,max-age=31536000' });
-      return getDownloadURL(r);
+    async upload(blob) {
+      const cloud = env.VITE_CLOUDINARY_CLOUD_NAME;
+      const preset = env.VITE_CLOUDINARY_UPLOAD_PRESET;
+      if (!cloud || !preset) throw new Error('Faltan los datos de Cloudinary (VITE_CLOUDINARY_CLOUD_NAME y VITE_CLOUDINARY_UPLOAD_PRESET).');
+      const form = new FormData();
+      form.append('file', blob);
+      form.append('upload_preset', preset);
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloud}/image/upload`, { method: 'POST', body: form });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.secure_url) throw new Error(json.error?.message || `No se pudo subir la foto (${res.status}).`);
+      return json.secure_url;
     },
   };
 }

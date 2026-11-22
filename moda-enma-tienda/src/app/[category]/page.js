@@ -6,13 +6,15 @@ import LiveGrid from '@/components/ui/LiveGrid';
 
 export const dynamic = 'force-dynamic';
 
-export function generateMetadata({ params }) {
-  const d = getDepartment(params.category);
+export async function generateMetadata({ params }) {
+  const { category } = await params;
+  const d = getDepartment(category);
   return d ? { title: d.name, description: d.desc, alternates: { canonical: `/${d.id}` } } : {};
 }
 
 export default async function DepartmentPage({ params }) {
-  const dep = getDepartment(params.category);
+  const { category } = await params;
+  const dep = getDepartment(category);
   if (!dep) notFound();
   const products = await getProducts({ department: dep.id });
 

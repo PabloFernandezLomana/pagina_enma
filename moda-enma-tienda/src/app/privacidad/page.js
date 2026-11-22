@@ -23,7 +23,8 @@ export default function Page() {
       <H>5. Con quién los compartimos</H>
       <UL>
         <li><strong>PayPal</strong>, si eliges pagar con PayPal. Gestiona el pago con su propia política de privacidad; nosotros no recibimos los datos de tu cuenta ni de tu tarjeta.</li>
-        <li><strong>Google Firebase</strong> (alojamiento y base de datos), como encargado del tratamiento, con las garantías contractuales del RGPD.</li>
+        <li><strong>Google Firebase</strong> (base de datos y acceso al panel), como encargado del tratamiento, con las garantías contractuales del RGPD.</li>
+        <li><strong>Cloudflare</strong> (alojamiento y entrega de la web) y <strong>Cloudinary</strong> (almacenamiento de las fotos de los productos), como encargados del tratamiento, con las garantías contractuales del RGPD.</li>
         <li><strong>Servicio de mensajería</strong>, solo si pides envío a domicilio, con los datos imprescindibles para entregarlo.</li>
       </UL>
       <P>No vendemos tus datos ni los cedemos a terceros con fines comerciales.</P>

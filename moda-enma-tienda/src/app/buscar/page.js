@@ -5,7 +5,8 @@ import LiveGrid from '@/components/ui/LiveGrid';
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Buscar', robots: { index: false } };
 
-export default async function SearchPage({ searchParams }) {
+export default async function SearchPage(props) {
+  const searchParams = await props.searchParams;
   const q = (searchParams?.q || '').toString().slice(0, 80);
   const products = await getProducts({ search: q });
   return (

@@ -10,3 +10,6 @@
 8. **Facturas sin desglose de IVA** (ajuste `invoices.showVatBreakdown`).
 9. **Config única:** `site.config.js` y `tokens.css` en la raíz, sincronizados con `scripts/sync-shared.mjs`.
 10. **Pagos pendientes de PayPal:** reservan stock; si el cliente abandona se libera. No hay tarea programada: lo puedes liberar a mano cancelando el pedido en el panel.
+11. **Despliegue sin tarjeta (21-22 nov 2026):** Firebase App Hosting y Cloud Storage exigen plan Blaze (tarjeta). La tienda pasa a **Cloudflare Workers** (Next 15 + OpenNext), las fotos a **Cloudinary** (subida directa desde el panel con un preset *unsigned*), y el panel sigue en Firebase Hosting (Spark). La tienda accede a Firestore por **API REST** (sin `firebase-admin`).
+12. **Catálogo en caché en memoria** (30 s por instancia) en vez de `unstable_cache`, para no gastar lecturas gratuitas de Firestore.
+13. **Imágenes sin optimizador de Next** (`unoptimized`): llegan ya comprimidas a webp desde el panel.
