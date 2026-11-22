@@ -51,6 +51,7 @@ function makeFirebaseBackend() {
       signIn: (email, pass) => signInWithEmailAndPassword(auth, email, pass),
       signOut: () => signOut(auth),
       reset: (email) => sendPasswordResetEmail(auth, email),
+      getIdToken: async () => (auth.currentUser ? auth.currentUser.getIdToken() : null),
     },
     subscribe(col, cb) {
       return onSnapshot(collection(db, col), (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }))), (err) => {

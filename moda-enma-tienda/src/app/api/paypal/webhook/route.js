@@ -3,6 +3,7 @@
 import { NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebaseAdmin';
 import { verifyWebhook } from '@/lib/paypal.server';
+import { sendOrderConfirmation } from '@/lib/notify.server';
 
 export const runtime = 'nodejs';
 
@@ -23,6 +24,7 @@ export async function POST(request) {
       const o = snap.data();
       if (event.event_type === 'PAYMENT.CAPTURE.COMPLETED' && o.paymentStatus === 'awaiting_payment' && Number(res.amount?.value).toFixed(2) === Number(o.total).toFixed(2)) {
         await ref.update({ paymentStatus: 'paid', paidAt: new Date().toISOString(), paypalCaptureId: res.id });
+        await sendOrderConfirmation(orderId);
       } else if (['PAYMENT.CAPTURE.REFUNDED', 'PAYMENT.CAPTURE.REVERSED'].includes(event.event_type)) {
         await ref.update({ paymentStatus: 'refunded' });
       } else if (event.event_type === 'PAYMENT.CAPTURE.DENIED') {

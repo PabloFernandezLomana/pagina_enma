@@ -4,13 +4,13 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { toast } from 'sonner';
-import { ShoppingBag, Truck, RotateCcw, ChevronDown, Check } from 'lucide-react';
+import { ShoppingBag, Truck, RotateCcw, ChevronDown, Check, MessageCircle } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { getClientFirestore } from '@/lib/firebase.client';
 import { toPublicProduct, totalStock } from '@/lib/productShape';
 import { getDepartment } from '@/lib/categories';
 import { eur } from '@/lib/format';
-import { SITE_CONFIG } from '@/site.config';
+import { SITE_CONFIG, whatsappLink } from '@/site.config';
 
 export default function ProductDetailClient({ initial }) {
   const { add } = useCart();
@@ -19,6 +19,8 @@ export default function ProductDetailClient({ initial }) {
   const [img, setImg] = useState(0);
   const [pulse, setPulse] = useState(0);
   const galleryRef = useRef(null);
+  const [pageUrl, setPageUrl] = useState('');
+  useEffect(() => { setPageUrl(window.location.origin + window.location.pathname); }, []);
   const dep = getDepartment(p.department);
   const { delivery, meetup } = SITE_CONFIG.shipping.methods;
 
@@ -35,6 +37,7 @@ export default function ProductDetailClient({ initial }) {
   }, [initial.id]);
 
   const variant = p.variants.find((v) => v.size === size);
+  const waHref = whatsappLink(`Hola, me interesa "${p.name}"${size ? ` en talla ${size}` : ''}. ¿Me ayudas con la talla o las medidas?${pageUrl ? ` ${pageUrl}` : ''}`);
   const soldOut = totalStock(p) === 0;
   const ready = Boolean(variant && variant.stock > 0);
 
@@ -106,6 +109,12 @@ export default function ProductDetailClient({ initial }) {
               ))}
             </div>
           </div>
+
+          {waHref && (
+            <a href={waHref} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex min-h-[44px] items-center gap-2 text-[14px] font-semibold text-ink-soft underline-offset-4 transition-colors hover:text-terracotta-deep hover:underline">
+              <MessageCircle size={17} aria-hidden /> ¿Dudas con la talla o las medidas? Pregúntame por WhatsApp
+            </a>
+          )}
 
           <div className="mt-7 hidden gap-3 sm:flex">
             <button onClick={addToBag} disabled={soldOut} className="btn btn-primary flex-1 !min-h-[56px] text-[14px]">

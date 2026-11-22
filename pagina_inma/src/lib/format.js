@@ -41,3 +41,13 @@ export const SIZE_PRESETS = [
 ];
 export const STATUSES = ['Pendiente', 'Preparando', 'Enviado', 'Entregado', 'Cancelado'];
 export const dept = (id) => DEPARTMENTS.find((d) => d.id === id) || DEPARTMENTS[0];
+
+/** Stock bajo por defecto: 1 unidad o menos. Cada producto puede tener su propio umbral. */
+export const LOW_STOCK_DEFAULT = 1;
+
+/** Tallas agotadas y tallas con una última unidad (solo si el producto aún tiene stock en otras tallas). */
+export function sizeAlerts(p) {
+  const v = (p.variants || []).map((x) => ({ size: String(x.size), stock: Number(x.stock) || 0 }));
+  if (!v.some((x) => x.stock > 0)) return { out: [], last: [] };
+  return { out: v.filter((x) => x.stock === 0).map((x) => x.size), last: v.filter((x) => x.stock === 1).map((x) => x.size) };
+}

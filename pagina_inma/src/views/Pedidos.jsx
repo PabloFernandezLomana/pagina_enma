@@ -28,6 +28,8 @@ function OrderSheet({ orderId, onClose }) {
   const [msg, setMsg] = useState('');
   const [notes, setNotes] = useState(order?.notes || '');
   const [busy, setBusy] = useState(false);
+  const [emailOn, setEmailOn] = useState(true);
+  const [track, setTrack] = useState({ code: order?.trackingCode || '', carrier: order?.carrier || '' });
 
   const key = tplKey || (order && (STATUSES.includes(order.status) ? order.status : 'Pendiente'));
   useEffect(() => { if (order && key) setMsg(fillTemplate(templates[key] || '', order)); }, [key, order?.status, order?.id, templates]); // eslint-disable-line
@@ -40,6 +42,20 @@ function OrderSheet({ orderId, onClose }) {
     finally { setBusy(false); }
   };
 
+  const canEmail = Boolean(order.clientEmail);
+  const changeStatus = (newStatus, okMsg) => run(async () => {
+    if (order.shippingMethod === 'delivery' && (track.code !== (order.trackingCode || '') || track.carrier !== (order.carrier || ''))) {
+      await actions.saveOrderTracking(order.id, { trackingCode: track.code, carrier: track.carrier });
+    }
+    await actions.setOrderStatus(order.id, newStatus);
+    if (okMsg) toast.success(okMsg);
+    if (emailOn && canEmail && ['Preparando', 'Enviado', 'Entregado', 'Cancelado'].includes(newStatus)) {
+      const r = await actions.notifyOrderEmail(order.id);
+      if (r.sent) toast.success(`Correo enviado a ${order.clientEmail}`);
+      else if (r.error) toast.warning(`No se pudo avisar por correo (${r.error}). Puedes avisarle por WhatsApp aquí abajo.`, { duration: 8000 });
+    }
+  });
+
   const next = NEXT[order.status];
   const flow = ['Pendiente', 'Preparando', 'Enviado', 'Entregado'];
   const idx = flow.indexOf(order.status);
@@ -48,7 +64,7 @@ function OrderSheet({ orderId, onClose }) {
   const cancel = async () => {
     const warn = order.paymentMethod === 'paypal' && order.paymentStatus === 'paid' ? ' Ya está pagado por PayPal: recuerda devolver el dinero desde tu cuenta de PayPal.' : '';
     if (!(await confirm({ title: '¿Cancelar este pedido?', text: `El stock vuelve a la tienda.${warn}`, ok: 'Sí, cancelar', cancel: 'No', danger: true }))) return;
-    run(() => actions.setOrderStatus(order.id, 'Cancelado'), 'Pedido cancelado');
+    changeStatus('Cancelado', 'Pedido cancelado');
   };
   const invoice = async () => {
     setBusy(true);
@@ -74,10 +90,30 @@ function OrderSheet({ orderId, onClose }) {
         {order.status !== 'Cancelado' && (
           <div className="stack">
             <div className="status-flow">{flow.map((s, i) => <div key={s} className={i <= idx ? 'on' : ''}>{s}</div>)}</div>
-            {next && <button className="btn btn-dark btn-lg btn-block" disabled={busy} onClick={() => run(() => actions.setOrderStatus(order.id, next[0]), `Ahora está: ${next[0]}`)}><Check aria-hidden />{next[1]}</button>}
+            {next && <button className="btn btn-dark btn-lg btn-block" disabled={busy} onClick={() => changeStatus(next[0], `Ahora está: ${next[0]}`)}><Check aria-hidden />{next[1]}</button>}
             {order.paymentMethod === 'cash' && order.paymentStatus === 'pending' && <button className="btn btn-ok btn-block" disabled={busy} onClick={() => run(() => actions.markPaid(order.id), 'Cobro registrado')}>💶 Ya me han pagado {eur(order.total)}</button>}
           </div>
         )}
+
+        {order.status !== 'Cancelado' && order.shippingMethod === 'delivery' && (
+          <section className="card" style={{ boxShadow: 'none', border: '1px solid rgb(var(--p-ink) / .08)' }}>
+            <h2 style={{ marginBottom: 8 }}>📦 Seguimiento del envío</h2>
+            <div className="row wrap">
+              <Field label="Empresa (opcional)"><input className="input" value={track.carrier} onChange={(e) => setTrack((t) => ({ ...t, carrier: e.target.value }))} placeholder="Correos, SEUR…" /></Field>
+              <Field label="Código de seguimiento"><input className="input" value={track.code} onChange={(e) => setTrack((t) => ({ ...t, code: e.target.value }))} placeholder="Pégalo aquí" /></Field>
+            </div>
+            <p className="hint">Rellénalo antes de pulsar "Marcar como enviado": el cliente lo recibe en el correo.</p>
+          </section>
+        )}
+
+        {order.status !== 'Cancelado' && (
+          <label className="row" style={{ gap: 10, alignItems: 'flex-start' }}>
+            <input type="checkbox" checked={emailOn && canEmail} disabled={!canEmail} onChange={(e) => setEmailOn(e.target.checked)} style={{ marginTop: 4, width: 20, height: 20 }} />
+            <span>{canEmail ? <>Avisar al cliente <b>por correo</b> cuando cambie el estado <span className="muted small">({order.clientEmail})</span></> : <span className="muted">Este cliente no tiene correo: avísale por WhatsApp.</span>}</span>
+          </label>
+        )}
+
+        {order.notifications?.confirmationError && <div className="alert">El correo de confirmación no se pudo enviar a este cliente ({order.notifications.confirmationError}). Escríbele por WhatsApp.</div>}
 
         {order.clientPhone && (
           <section className="wa-box">
@@ -115,7 +151,7 @@ function OrderSheet({ orderId, onClose }) {
         <div className="row wrap">
           <button className="btn" disabled={busy} onClick={invoice}><FileText aria-hidden />{order.invoiceId ? `Descargar factura ${order.invoiceId}` : 'Crear factura'}</button>
           {order.status !== 'Cancelado' && order.status !== 'Entregado' && <button className="btn btn-danger" disabled={busy} onClick={cancel}>Cancelar pedido</button>}
-          {order.status === 'Cancelado' && <button className="btn" disabled={busy} onClick={() => run(() => actions.setOrderStatus(order.id, 'Pendiente'), 'Pedido recuperado')}>Recuperar pedido</button>}
+          {order.status === 'Cancelado' && <button className="btn" disabled={busy} onClick={() => changeStatus('Pendiente', 'Pedido recuperado')}>Recuperar pedido</button>}
         </div>
       </SheetBody>
     </Sheet>

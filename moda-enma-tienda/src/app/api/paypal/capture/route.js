@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebaseAdmin';
 import { capturePayPalOrder, paypalConfigured } from '@/lib/paypal.server';
 import { rateLimit, clientIp } from '@/lib/rateLimit';
+import { sendOrderConfirmation } from '@/lib/notify.server';
 
 export const runtime = 'nodejs';
 
@@ -45,6 +46,7 @@ export async function POST(request) {
       paymentStatus: 'paid', paidAt: new Date().toISOString(), paypalCaptureId: capture.id,
       payerEmail: json.payer?.email_address || '',
     });
+    await sendOrderConfirmation(order.id);
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('[paypal] capture error', err);

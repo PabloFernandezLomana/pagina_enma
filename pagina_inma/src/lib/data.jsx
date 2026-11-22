@@ -107,6 +107,27 @@ export function DataProvider({ backend, children }) {
 
   const markPaid = useCallback((orderId) => backend.set('orders', orderId, { paymentStatus: 'paid', paidAt: new Date().toISOString() }, true), [backend]);
   const saveOrderNotes = useCallback((orderId, notes) => backend.set('orders', orderId, { notes }, true), [backend]);
+  const saveOrderTracking = useCallback((orderId, { trackingCode, carrier }) => backend.set('orders', orderId, { trackingCode: (trackingCode || '').trim(), carrier: (carrier || '').trim() }, true), [backend]);
+
+  /** Pide a la tienda que avise al cliente por correo del estado actual del pedido. Nunca lanza: devuelve { sent, skipped, error }. */
+  const notifyOrderEmail = useCallback(async (orderId) => {
+    if (backend.mode !== 'firebase') return { skipped: true, reason: 'En modo prueba no se envían correos.' };
+    const base = String(import.meta.env.VITE_STORE_URL || '').replace(/\/$/, '');
+    if (!base) return { error: 'Falta configurar la dirección de la tienda (VITE_STORE_URL).' };
+    try {
+      const token = await backend.auth.getIdToken();
+      const res = await fetch(`${base}/api/admin/order-status-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ orderId }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) return { error: json.error || `La tienda respondió ${res.status}` };
+      return json;
+    } catch {
+      return { error: 'No se pudo conectar con la tienda.' };
+    }
+  }, [backend]);
 
   /** Venta registrada a mano (en persona / por WhatsApp). Descuenta stock y numera como la web. */
   const createManualOrder = useCallback(({ client, items, shippingMethod, paymentMethod, status, notes }) =>
@@ -181,7 +202,7 @@ export function DataProvider({ backend, children }) {
 
   const value = {
     backend, ready, errors, products, orders, clients, invoices, stats, business, templates,
-    actions: { saveProduct, deleteProduct, setActive, setStock, deleteDemoProducts, setOrderStatus, markPaid, saveOrderNotes, createManualOrder, saveClient, deleteClient, createInvoice, setInvoiceStatus, saveBusiness, saveTemplate, resetTemplate },
+    actions: { saveProduct, deleteProduct, setActive, setStock, deleteDemoProducts, setOrderStatus, markPaid, saveOrderNotes, saveOrderTracking, notifyOrderEmail, createManualOrder, saveClient, deleteClient, createInvoice, setInvoiceStatus, saveBusiness, saveTemplate, resetTemplate },
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
