@@ -2,7 +2,7 @@
 import LegalPage, { H, P, owner } from '@/components/legal/LegalPage';
 import { SITE_CONFIG } from '@/site.config';
 
-export const metadata = { title: 'Aviso legal' };
+export const metadata = { title: 'Aviso legal', alternates: { canonical: '/aviso-legal' } };
 
 export default function Page() {
   const o = owner();

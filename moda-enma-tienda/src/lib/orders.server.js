@@ -63,6 +63,12 @@ export async function createOrder(data) {
   const method = SITE_CONFIG.shipping.methods[data.shippingMethod];
   let result;
 
+  // Freno al "acaparar stock": como mucho 2 pagos PayPal sin completar por correo.
+  if (data.paymentMethod === 'paypal') {
+    const pend = await db.collection('orders').where('paymentStatus', '==', 'awaiting_payment').where('clientEmail', '==', data.email).get();
+    if (pend.size >= 2) throw new OrderError('Tienes pagos de PayPal sin terminar. Complétalos o espera unos minutos y vuelve a intentarlo.', 429);
+  }
+
   await db.runTransaction(async (tx) => {
     const productIds = [...new Set(items.map((i) => i.productId))];
     const pRefs = productIds.map((id) => db.collection('products').doc(id));
@@ -201,4 +207,36 @@ export async function releaseOrder(orderId, { requireToken, reason = 'Cancelado'
     });
     tx.update(ref, { status: 'Cancelado', paymentStatus: 'cancelled', notes: `${o.notes ? o.notes + ' · ' : ''}${reason}`, cancelledAt: new Date().toISOString() });
   });
+}
+
+
+export const PAYPAL_HOLD_MS = 30 * 60 * 1000;
+let lastSweep = 0;
+
+/** Libera el stock de los pedidos PayPal que llevan más de 30 min sin pagarse.
+ *  No hay tareas programadas en el plan gratuito: se llama al crear pedidos, al refrescar el catálogo
+ *  y desde el panel. `force` ignora el intervalo mínimo entre barridos. Nunca lanza. */
+export async function expireAbandonedOrders({ force = false, maxAgeMs = PAYPAL_HOLD_MS } = {}) {
+  const now = Date.now();
+  if (!force && now - lastSweep < 60_000) return { released: 0, skipped: true };
+  lastSweep = now;
+  const db = getAdminDb();
+  if (!db) return { released: 0 };
+  let released = 0;
+  try {
+    const snap = await db.collection('orders').where('paymentStatus', '==', 'awaiting_payment').get();
+    for (const d of snap.docs) {
+      const o = d.data();
+      if (now - Date.parse(o.createdAt) < maxAgeMs) continue;
+      try {
+        await releaseOrder(o.id || d.id, { reason: 'Pago no completado: caducado a los 30 min' });
+        released += 1;
+      } catch (err) {
+        if (!(err instanceof OrderError)) console.error('[orders] no se pudo caducar', d.id, err.message);
+      }
+    }
+  } catch (err) {
+    console.error('[orders] barrido de pedidos caducados falló:', err.message);
+  }
+  return { released };
 }

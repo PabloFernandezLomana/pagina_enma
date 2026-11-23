@@ -14,7 +14,11 @@ export function rateLimit(key, max, windowMs) {
   return hit.count <= max;
 }
 
+/** IP real del cliente. En Cloudflare, `cf-connecting-ip` lo pone Cloudflare y no se puede falsificar;
+ *  `x-forwarded-for` lo escribe el cliente y solo se usa como último recurso (desarrollo local). */
 export function clientIp(request) {
+  const cf = request.headers.get('cf-connecting-ip');
+  if (cf) return cf.trim();
   const fwd = request.headers.get('x-forwarded-for');
-  return (fwd ? fwd.split(',')[0] : request.headers.get('x-real-ip') || 'unknown').trim();
+  return (fwd ? fwd.split(',').pop() : request.headers.get('x-real-ip') || 'unknown').trim();
 }

@@ -3,7 +3,7 @@ import LegalPage, { H, P, UL, owner } from '@/components/legal/LegalPage';
 import { SITE_CONFIG } from '@/site.config';
 import { eur } from '@/lib/format';
 
-export const metadata = { title: 'Términos y condiciones' };
+export const metadata = { title: 'Términos y condiciones', alternates: { canonical: '/terminos-y-condiciones' } };
 
 export default function Page() {
   const o = owner();
@@ -20,16 +20,16 @@ export default function Page() {
       <H>4. Entrega</H>
       <UL>
         {delivery.enabled && <li><strong>{delivery.label}</strong>: {eur(delivery.cost)} por pedido, a {SITE_CONFIG.shipping.shipsTo}, en 2-4 días laborables desde la confirmación del pago. Se paga con PayPal.</li>}
-        {meetup.enabled && <li><strong>{meetup.label}</strong>: sin gastos de envío. Acordamos contigo lugar y hora. Se puede pagar en mano o con PayPal.</li>}
+        {meetup.enabled && <li><strong>{meetup.label}</strong>: sin gastos de envío. Acordamos contigo lugar y hora. Se puede pagar en efectivo o con PayPal.</li>}
       </UL>
       <H>5. Formas de pago</H>
-      <P>Aceptamos únicamente PayPal y pago en mano (solo cuando la entrega es en persona). El pago con PayPal se procesa en la plataforma de PayPal; no almacenamos datos de tarjetas ni de cuentas.</P>
+      <P>Aceptamos únicamente PayPal y pago en efectivo (solo cuando la entrega es en persona). El pago con PayPal se procesa en la plataforma de PayPal; no almacenamos datos de tarjetas ni de cuentas.</P>
       <H>6. Derecho de desistimiento</H>
       <P>Tienes {days} días naturales desde que recibes el producto para desistir de la compra sin dar explicaciones. Para ejercerlo, escríbenos a {o.email} indicando tu número de pedido. Devuelve el producto sin usar, con sus etiquetas y en buen estado, a más tardar {days} días después de comunicarnos tu decisión. Los costes directos de devolución corren a tu cargo. Te reembolsaremos todos los pagos, incluidos los gastos de envío estándar, en un máximo de {days} días desde que recibamos el producto o la prueba de su devolución, por el mismo medio de pago que usaste.</P>
       <P>El desistimiento no aplica a productos confeccionados a medida o claramente personalizados, ni a artículos de higiene que hayan sido desprecintados.</P>
       <H>7. Garantía legal</H>
       <P>Los productos nuevos tienen una garantía legal de 3 años desde la entrega frente a faltas de conformidad, según el Texto Refundido de la Ley General para la Defensa de los Consumidores y Usuarios. Si algo no es conforme, contáctanos y lo reparamos, sustituimos, rebajamos el precio o resolvemos el contrato según proceda.</P>
-      <H>8. Stock y errores</H>
+      <H>8. Disponibilidad y errores</H>
       <P>Mostramos el stock disponible en cada momento. Si, aun así, un artículo no estuviera disponible, te lo diremos y te reembolsaremos cualquier importe ya pagado. Si detectamos un error evidente de precio, te lo comunicaremos antes de aceptar el pedido.</P>
       <H>9. Reclamaciones</H>
       <P>Escríbenos a {o.email} y responderemos lo antes posible. También puedes acudir a los servicios de consumo de tu comunidad autónoma.</P>

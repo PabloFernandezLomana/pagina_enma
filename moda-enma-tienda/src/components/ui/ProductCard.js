@@ -24,7 +24,7 @@ export default function ProductCard({ product, priority = false, sizes = '(min-w
     <article className="group card-lift relative flex flex-col overflow-hidden rounded-lg bg-paper">
       <div className="relative aspect-[3/4] overflow-hidden" style={{ backgroundColor: `rgb(var(--c-${p.department}, var(--c-sand)))` }}>
         <Link href={`/producto/${p.id}`} className="absolute inset-0 block" aria-label={`${p.name}, ${eur(p.salePrice)}`}>
-          {p.images[0] && <Image src={p.images[0]} alt="" fill priority={priority} sizes={sizes} className={`zoom-img object-cover ${soldOut ? 'opacity-60' : ''}`} />}
+          {p.images[0] && <Image src={p.images[0]} alt={p.name} fill priority={priority} sizes={sizes} className={`zoom-img object-cover ${soldOut ? 'opacity-60' : ''}`} />}
           {second && <Image src={second} alt="" fill sizes={sizes} className="object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100" />}
           {badge && (
             <span className={`absolute left-3 top-3 rounded-full px-3 py-1 text-[11px] font-bold tracking-wide ${soldOut ? 'bg-ink text-cream' : 'bg-paper text-ink'}`}>{badge}</span>

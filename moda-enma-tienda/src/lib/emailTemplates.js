@@ -53,8 +53,8 @@ export function confirmationEmail(o) {
   let howText;
   if (meetup) {
     how = `<p><b>Quedamos en ${esc(SITE_CONFIG.brand.city)}.</b> El día, la hora y el lugar los acordamos tú y yo por WhatsApp, cuando mejor nos venga a los dos.</p>${wa ? button(wa, 'Escribirme por WhatsApp', '#1FA855') : ''}
-<p style="color:${C.soft};font-size:14px">${paid ? 'Ya has pagado con PayPal.' : `Pagas en mano al recibirlo: <b>${eur(o.total)}</b>.`}</p>`;
-    howText = `Quedamos en ${SITE_CONFIG.brand.city}. El día, la hora y el lugar los acordamos por WhatsApp, cuando nos venga bien a los dos.${wa ? `\nEscríbeme aquí: ${wa}` : ''}\n${paid ? 'Ya has pagado con PayPal.' : `Pagas en mano al recibirlo: ${eur(o.total)}.`}`;
+<p style="color:${C.soft};font-size:14px">${paid ? 'Ya has pagado con PayPal.' : `Pagas en efectivo cuando nos veamos: <b>${eur(o.total)}</b>.`}</p>`;
+    howText = `Quedamos en ${SITE_CONFIG.brand.city}. El día, la hora y el lugar los acordamos por WhatsApp, cuando nos venga bien a los dos.${wa ? `\nEscríbeme aquí: ${wa}` : ''}\n${paid ? 'Ya has pagado con PayPal.' : `Pagas en efectivo cuando nos veamos: ${eur(o.total)}.`}`;
   } else {
     how = `<p><b>Envío a domicilio</b> a:<br>${esc(o.clientAddress)}</p><p>Lo enviamos en 2-4 días laborables. Te avisaremos por correo cuando salga.</p>
 <p style="color:${C.soft};font-size:14px">Pago con PayPal: recibido.</p>`;

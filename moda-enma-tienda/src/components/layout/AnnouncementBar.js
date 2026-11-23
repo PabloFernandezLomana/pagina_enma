@@ -8,7 +8,7 @@ export default function AnnouncementBar() {
   const items = [
     delivery.enabled && `Envío a domicilio ${eur(delivery.cost)}`,
     meetup.enabled && `O quedamos en ${SITE_CONFIG.brand.city}: sin gastos de envío`,
-    'Paga con PayPal o en mano',
+    'Paga con PayPal o en efectivo',
     SITE_CONFIG.legal.taxIncludedText,
     `${SITE_CONFIG.legal.withdrawalDays} días para devolver`,
   ].filter(Boolean);

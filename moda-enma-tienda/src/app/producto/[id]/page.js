@@ -1,6 +1,6 @@
 // moda-enma-tienda/src/app/producto/[id]/page.js
 import { notFound } from 'next/navigation';
-import { getProduct, getProducts } from '@/lib/catalog.server';
+import { getProduct, getProducts, catalogUnavailable } from '@/lib/catalog.server';
 import { SITE_CONFIG, siteUrl } from '@/site.config';
 import ProductDetailClient from './ProductDetailClient';
 import TrackView from '@/components/ui/TrackView';
@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata({ params }) {
   const { id } = await params;
   const p = await getProduct(id);
-  if (!p) return { title: 'Producto no encontrado', robots: { index: false } };
+  if (!p) return catalogUnavailable() ? { title: 'Producto' } : { title: 'Producto no encontrado', robots: { index: false } };
   const desc = p.description.slice(0, 155) || SITE_CONFIG.brand.description;
   return {
     title: p.name, description: desc, alternates: { canonical: `/producto/${p.id}` },
@@ -23,7 +23,11 @@ export async function generateMetadata({ params }) {
 export default async function ProductPage({ params }) {
   const { id } = await params;
   const product = await getProduct(id);
-  if (!product) notFound();
+  if (!product) {
+    // Si el catálogo no se pudo leer, NO es un 404: pedimos al navegador que reintente (error.js).
+    if (catalogUnavailable()) throw new Error('Catálogo no disponible');
+    notFound();
+  }
   const related = (await getProducts({ department: product.department })).filter((p) => p.id !== product.id).slice(0, 4);
 
   const ld = {

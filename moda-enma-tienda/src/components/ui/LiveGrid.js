@@ -17,6 +17,7 @@ export function useLiveProducts(initial, filter) {
       unsub = fs.onSnapshot(
         fs.query(fs.collection(db, 'products'), fs.where('active', '==', true)),
         (snap) => {
+          if (snap.metadata?.fromCache && snap.empty) return; // no pisar la lista del servidor con un vacío provisional
           const all = snap.docs.map((d) => toPublicProduct(d.id, d.data()));
           setList(filter ? all.filter(filter) : all);
         },

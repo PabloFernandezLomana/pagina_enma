@@ -2,7 +2,7 @@
 import { Mail, MessageCircle, Instagram, Phone } from 'lucide-react';
 import { SITE_CONFIG, hasValue } from '@/site.config';
 
-export const metadata = { title: 'Contacto' };
+export const metadata = { title: 'Contacto', alternates: { canonical: '/contacto' } };
 
 export default function ContactPage() {
   const b = SITE_CONFIG.brand;

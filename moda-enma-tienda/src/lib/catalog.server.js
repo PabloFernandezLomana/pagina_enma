@@ -3,6 +3,7 @@
 import { getAdminDb, isDemoAllowed } from './firebaseAdmin';
 import { DEMO_PRODUCTS } from '@/data/demoProducts';
 import { toPublicProduct } from './productShape';
+import { expireAbandonedOrders } from './orders.server';
 
 async function fetchAllFromFirestore() {
   const db = getAdminDb();
@@ -11,13 +12,32 @@ async function fetchAllFromFirestore() {
 }
 
 // Caché en memoria de 30 s (por instancia): protege las lecturas gratuitas de Firestore.
+// Si Firestore falla, se sirve el último catálogo bueno (aunque esté caducado) en vez de una tienda vacía.
 let cache = { at: 0, data: null };
+let failing = false;
 async function cachedFetch() {
   if (cache.data && Date.now() - cache.at < 30_000) return cache.data;
-  const data = await fetchAllFromFirestore();
-  cache = { at: Date.now(), data };
-  return data;
+  try {
+    // Aprovechamos la visita para liberar stock de pagos PayPal abandonados (como mucho 1 vez por minuto).
+    const { released } = await expireAbandonedOrders();
+    if (released) cache = { at: 0, data: null };
+    const data = await fetchAllFromFirestore();
+    cache = { at: Date.now(), data };
+    failing = false;
+    return data;
+  } catch (err) {
+    failing = true;
+    if (cache.data) {
+      console.error('[catalog] Firestore falló, sirviendo la copia anterior:', err.message);
+      return cache.data;
+    }
+    throw err;
+  }
 }
+
+/** true si la última lectura del catálogo falló y no había copia: la web debe avisar, no fingir que no hay prendas. */
+export const catalogUnavailable = () => failing && !cache.data;
+export const invalidateCatalog = () => { cache = { at: 0, data: null }; };
 
 const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
