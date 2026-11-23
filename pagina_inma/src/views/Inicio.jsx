@@ -1,5 +1,5 @@
 // pagina_inma/src/views/Inicio.jsx
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ShoppingBag, AlertTriangle, Wallet, TrendingUp, Eye, Plus } from 'lucide-react';
 import { useData } from '../lib/data';
 import { eur, timeAgo, totalStock, LOW_STOCK_DEFAULT } from '../lib/format';
@@ -26,7 +26,15 @@ function Rank({ rows, valueKey, unit }) {
 }
 
 export default function Inicio({ go }) {
-  const { orders, products, stats } = useData();
+  const { orders, products, stats, actions } = useData();
+  const [mailOk, setMailOk] = useState(true);
+  // Al entrar: comprobamos el correo de la tienda y liberamos stock de pagos PayPal abandonados.
+  useEffect(() => {
+    let on = true;
+    actions.emailHealth().then((r) => { if (on && r && r.emailConfigured === false) setMailOk(false); });
+    actions.releaseExpiredOrders();
+    return () => { on = false; };
+  }, []); // eslint-disable-line
   const month = useMemo(() => monthSummary(orders), [orders]);
   const days = useMemo(() => salesByDay(orders, 14), [orders]);
   const ranking = useMemo(() => productRanking(stats, orders, products, 30), [stats, orders, products]);
@@ -43,6 +51,8 @@ export default function Inicio({ go }) {
         <div><h1>{greet} 👋</h1><p>Esto es lo que está pasando hoy en ModaEnma.</p></div>
         <div className="actions"><button className="btn btn-primary" onClick={() => go('productos', { new: Date.now() })}><Plus aria-hidden />Subir un producto</button></div>
       </div>
+
+      {!mailOk && <div className="alert bad"><b>Los correos a clientes no están activados.</b> Hasta que se configuren (clave de Brevo y remitente en Cloudflare), los clientes no recibirán confirmación: avísales por WhatsApp.</div>}
 
       <div className="kpis">
         <button className="kpi t-pink rise" style={{ '--i': 0 }} onClick={() => go('pedidos')}><span className="ico"><ShoppingBag aria-hidden /></span><strong className="num">{toPrepare.length}</strong><span>Pedidos por preparar</span></button>
@@ -74,7 +84,7 @@ export default function Inicio({ go }) {
                 {toCollect.slice(0, 3).map((o) => (
                   <button key={o.id} className="item" onClick={() => go('pedidos', { open: o.id })}>
                     <span className="avatar" style={{ background: 'rgb(var(--c-ninos))' }}>€</span>
-                    <span className="grow"><span className="title" style={{ display: 'block' }}>Cobrar {eur(o.total)} a {o.clientName}</span><span className="muted small">Pago en mano · {o.id}</span></span>
+                    <span className="grow"><span className="title" style={{ display: 'block' }}>Cobrar {eur(o.total)} a {o.clientName}</span><span className="muted small">Pago en efectivo · {o.id}</span></span>
                   </button>
                 ))}
                 {low.slice(0, 3).map((p) => (

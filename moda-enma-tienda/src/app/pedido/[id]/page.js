@@ -33,13 +33,16 @@ export default async function OrderPage(props) {
   }
 
   const paid = order?.paymentStatus === 'paid';
+  const waiting = order?.paymentStatus === 'awaiting_payment';
+  const cancelled = order?.status === 'Cancelado';
   const cash = order?.paymentMethod === 'cash';
 
   return (
     <section className="wrap max-w-[760px] py-14 sm:py-20">
       {isDemo && <p className="mb-6 rounded-md bg-warn/15 px-4 py-3 text-[14px] font-semibold">Pedido de prueba: no se ha guardado nada porque la tienda está en modo demostración.</p>}
       <span className={`flex h-14 w-14 items-center justify-center rounded-full ${paid || isDemo ? 'bg-ok/15 text-ok' : 'bg-warn/15 text-warn'}`}>{paid || isDemo ? <CheckCircle2 size={28} /> : <Clock size={28} />}</span>
-      <h1 className="h-display mt-5 text-[clamp(40px,6vw,72px)]">{paid ? '¡Pago recibido, gracias!' : '¡Pedido recibido, gracias!'}</h1>
+      <h1 className="h-display mt-5 text-[clamp(40px,6vw,72px)]">{cancelled ? 'Pedido cancelado' : waiting ? 'Estamos confirmando tu pago' : paid ? '¡Pago recibido, gracias!' : '¡Pedido recibido, gracias!'}</h1>
+      {waiting && !cancelled && <p className="mt-3 rounded-md bg-warn/15 px-4 py-3 text-[15px] font-semibold">PayPal aún no nos ha confirmado el pago. Recarga esta página en un minuto. Si no se completa, no se te cobrará y la prenda se libera sola a los 30 minutos.</p>}
       <p className="mt-3 text-[17px] text-ink-soft">Número de pedido <strong className="text-ink">{params.id}</strong>. Guarda esta página o hazle una captura.</p>
 
       {order && (
@@ -47,8 +50,8 @@ export default async function OrderPage(props) {
           <div className="mt-8 rounded-lg border border-line bg-paper p-6">
             <h2 className="text-[17px] font-bold">Qué pasa ahora</h2>
             <p className="mt-2 text-[16px] leading-relaxed text-ink-soft">
-              {meetup
-                ? `${cash ? `Pagas ${eur(order.total)} en mano cuando nos veamos. ` : 'Hemos recibido tu pago. '}Quedamos en ${SITE_CONFIG.brand.city}: el día, la hora y el lugar los acordamos por WhatsApp, cuando mejor nos venga a los dos.`
+              {cancelled ? 'Este pedido se ha cancelado. Si crees que es un error, escríbenos por WhatsApp.' : waiting ? 'En cuanto PayPal confirme el pago, te enviamos el correo de confirmación.' : meetup
+                ? `${cash ? `Pagas ${eur(order.total)} en efectivo cuando nos veamos. ` : 'Hemos recibido tu pago. '}Quedamos en ${SITE_CONFIG.brand.city}: el día, la hora y el lugar los acordamos por WhatsApp, cuando mejor nos venga a los dos.`
                 : `Hemos recibido tu pago. Lo preparamos y lo enviamos a ${order.clientAddress} (2-4 días laborables). Te avisaremos por correo cuando salga.`}
             </p>
             <p className="mt-3 text-[15px] font-semibold">Estado: {order.status}{order.trackingCode ? ` · ${order.carrier ? `${order.carrier}: ` : 'Seguimiento: '}${order.trackingCode}` : ''}</p>

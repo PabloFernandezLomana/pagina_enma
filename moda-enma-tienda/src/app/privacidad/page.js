@@ -2,7 +2,7 @@
 import LegalPage, { H, P, UL, owner } from '@/components/legal/LegalPage';
 import { SITE_CONFIG } from '@/site.config';
 
-export const metadata = { title: 'Política de privacidad' };
+export const metadata = { title: 'Política de privacidad', alternates: { canonical: '/privacidad' } };
 
 export default function Page() {
   const o = owner();

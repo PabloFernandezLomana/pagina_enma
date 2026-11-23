@@ -4,7 +4,7 @@ import LegalPage, { H, P, UL, owner } from '@/components/legal/LegalPage';
 import { SITE_CONFIG } from '@/site.config';
 import { eur } from '@/lib/format';
 
-export const metadata = { title: 'Envíos y devoluciones' };
+export const metadata = { title: 'Envíos y devoluciones', alternates: { canonical: '/envios-devoluciones' } };
 
 export default function Page() {
   const o = owner();
@@ -15,11 +15,11 @@ export default function Page() {
       <H>Cómo recibes tu pedido</H>
       <UL>
         {delivery.enabled && <li><strong>{delivery.label}:</strong> {eur(delivery.cost)} por pedido, a {SITE_CONFIG.shipping.shipsTo}. Llega en 2-4 días laborables desde que confirmamos el pago. Pagas con PayPal.</li>}
-        {meetup.enabled && <li><strong>{meetup.label}:</strong> sin coste. Te escribimos para acordar lugar y hora. Pagas en mano o con PayPal.</li>}
+        {meetup.enabled && <li><strong>{meetup.label}:</strong> sin coste. Te escribimos para acordar lugar y hora. Pagas en efectivo o con PayPal.</li>}
       </UL>
       <P>Aún no hay envío gratis: el coste es el mismo para cualquier importe.</P>
       <H>Cómo pagas</H>
-      <P>Con PayPal o en mano (solo si quedamos en persona). No aceptamos otros medios de pago.</P>
+      <P>Con PayPal o en efectivo (solo si quedamos en persona). No aceptamos otros medios de pago.</P>
       <H>Cómo devolver</H>
       <UL>
         <li>Tienes {days} días naturales desde que lo recibes para desistir.</li>

@@ -102,12 +102,17 @@ export default function ProductDetailClient({ initial }) {
             </div>
             <div className="mt-3 flex flex-wrap gap-2.5" role="radiogroup" aria-label="Talla">
               {p.variants.map((v) => (
-                <button key={v.size} role="radio" aria-checked={size === v.size} disabled={v.stock === 0} onClick={() => setSize(v.size)}
+                <button key={v.size} role="radio" aria-checked={size === v.size} aria-label={v.stock === 0 ? `Talla ${v.size}, agotada` : `Talla ${v.size}`} disabled={v.stock === 0} onClick={() => setSize(v.size)}
                   className={`relative min-h-[48px] min-w-[56px] rounded-full border px-5 text-[15px] font-bold transition-[background-color,color,border-color,transform] duration-150 active:scale-95 disabled:cursor-not-allowed ${size === v.size ? 'border-ink bg-ink text-cream' : v.stock === 0 ? 'border-line bg-sand/50 text-ink-soft/60 line-through' : 'border-line bg-paper hover:border-ink'}`}>
                   {v.size}
                 </button>
               ))}
             </div>
+            {p.variants.some((v) => v.stock === 0) && whatsappLink(`Hola, me gustaría "${p.name}" en una talla que aparece agotada. ¿Podéis conseguirla o avisarme si vuelve?${pageUrl ? ` ${pageUrl}` : ''}`) && (
+              <a href={whatsappLink(`Hola, me gustaría "${p.name}" en una talla que aparece agotada. ¿Podéis conseguirla o avisarme si vuelve?${pageUrl ? ` ${pageUrl}` : ''}`)} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex min-h-[44px] items-center gap-2 text-[13px] font-semibold text-ink-soft underline-offset-4 hover:text-terracotta-deep hover:underline">
+                <MessageCircle size={16} aria-hidden /> ¿Tu talla está agotada? Pregúntanos si podemos conseguirla
+              </a>
+            )}
           </div>
 
           {waHref && (
@@ -125,7 +130,7 @@ export default function ProductDetailClient({ initial }) {
           <ul className="mt-8 divide-y divide-line rounded-lg border border-line bg-paper">
             <Info icon={Truck} title="Envío y pago">
               {delivery.enabled && <p>Envío a domicilio: {eur(delivery.cost)}, en 2-4 días laborables a {SITE_CONFIG.shipping.shipsTo}. Pago con PayPal.</p>}
-              {meetup.enabled && <p className="mt-2">Quedar en persona en {SITE_CONFIG.brand.city}: sin coste, y pagas en mano o con PayPal.</p>}
+              {meetup.enabled && <p className="mt-2">Quedar en persona en {SITE_CONFIG.brand.city}: sin coste, y pagas en efectivo o con PayPal.</p>}
             </Info>
             <Info icon={RotateCcw} title="Cambios y devoluciones">
               <p>Tienes {SITE_CONFIG.legal.withdrawalDays} días naturales para desistir de la compra desde que lo recibes. <Link href="/envios-devoluciones" className="underline underline-offset-2">Cómo hacerlo</Link>.</p>

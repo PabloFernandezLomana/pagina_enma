@@ -5,6 +5,7 @@ import { getAdminDb } from '@/lib/firebaseAdmin';
 import { capturePayPalOrder, paypalConfigured } from '@/lib/paypal.server';
 import { rateLimit, clientIp } from '@/lib/rateLimit';
 import { sendOrderConfirmation } from '@/lib/notify.server';
+import { runInBackground } from '@/lib/background.server';
 
 export const runtime = 'nodejs';
 
@@ -26,7 +27,7 @@ export async function POST(request) {
     }
     if (order.paymentStatus === 'paid') return NextResponse.json({ success: true, alreadyPaid: true });
     if (order.paymentStatus !== 'awaiting_payment') {
-      return NextResponse.json({ error: 'Este pedido ya no admite pago.' }, { status: 409 });
+      return NextResponse.json({ error: 'Este pedido ha caducado por falta de pago y se ha liberado la prenda. Vuelve a hacer el pedido.' }, { status: 409 });
     }
 
     const { ok, json } = await capturePayPalOrder(paypalOrderId);
@@ -46,7 +47,7 @@ export async function POST(request) {
       paymentStatus: 'paid', paidAt: new Date().toISOString(), paypalCaptureId: capture.id,
       payerEmail: json.payer?.email_address || '',
     });
-    await sendOrderConfirmation(order.id);
+    await runInBackground(sendOrderConfirmation(order.id));
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('[paypal] capture error', err);

@@ -1,7 +1,7 @@
 // moda-enma-tienda/src/app/api/cart/check/route.js
 // Devuelve precio y stock ACTUALES de lo que hay en la bolsa (para no enseñar datos antiguos).
 import { NextResponse } from 'next/server';
-import { getAllProducts } from '@/lib/catalog.server';
+import { getAllProducts, catalogUnavailable } from '@/lib/catalog.server';
 import { rateLimit, clientIp } from '@/lib/rateLimit';
 
 export const runtime = 'nodejs';
@@ -11,6 +11,7 @@ export async function POST(request) {
   try {
     const { items } = await request.json();
     const all = await getAllProducts();
+    if (catalogUnavailable()) return NextResponse.json({ items: [], unavailable: true }, { status: 503 });
     const out = (Array.isArray(items) ? items.slice(0, 30) : []).map((it) => {
       const p = all.find((x) => x.id === it.productId);
       const v = p?.variants.find((x) => x.size === it.size);

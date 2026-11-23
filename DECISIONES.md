@@ -17,3 +17,12 @@
 15. **Quedar en persona = Málaga + WhatsApp, sin horarios fijos.** Día, hora y lugar se acuerdan por WhatsApp. No hay chatbot ni selector de franjas.
 16. **El panel pide los correos a la tienda** (`/api/admin/order-status-email`) con su sesión de administradora, porque el panel es una web estática sin servidor. La tienda comprueba el permiso de administrador con Google y limita el acceso por origen (CORS).
 17. **Aviso de pedidos al móvil del dueño: aplazado.** La API oficial de WhatsApp cobra los mensajes que inicia la tienda; alternativa gratuita y fiable: Telegram.
+
+18. **Auditoría (nov. 2026)** — cambios aplicados:
+    - Los pagos PayPal sin completar caducan a los 30 min y devuelven el stock solo (se barre al entrar en la tienda o en el panel; sin tareas programadas). Máx. 2 pagos pendientes por correo.
+    - Límite de peticiones por `cf-connecting-ip` (no falsificable) y por correo.
+    - Si Firestore falla, la tienda sirve la última copia buena o avisa; nunca enseña "sin artículos" ni un 404 falso.
+    - `siteUrl()` quita barras finales y nunca usa localhost en producción.
+    - Correos: fallo visible en el panel ("Correo aviso no enviado" + Reintentar) y aviso en Inicio si no hay correo configurado. El envío va en segundo plano (`waitUntil`).
+    - Texto unificado: "efectivo" en toda la web, correos y panel.
+    - Favicon "E" serif (tienda terracota, panel rosa), manifest, apple-touch-icon, imagen OpenGraph por defecto, canonical por página, `error.js`/`loading.js`.

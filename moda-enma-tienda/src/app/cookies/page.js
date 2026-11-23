@@ -1,7 +1,7 @@
 // moda-enma-tienda/src/app/cookies/page.js
 import LegalPage, { H, P, UL } from '@/components/legal/LegalPage';
 
-export const metadata = { title: 'Política de cookies' };
+export const metadata = { title: 'Política de cookies', alternates: { canonical: '/cookies' } };
 
 export default function Page() {
   return (

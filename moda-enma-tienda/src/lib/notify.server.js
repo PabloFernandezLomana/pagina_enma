@@ -7,7 +7,7 @@ import { confirmationEmail, statusEmail } from '@/lib/emailTemplates';
 
 const nowIso = () => new Date().toISOString();
 
-/** Correo de "pedido recibido". Pago en mano: al crear el pedido. PayPal: cuando el pago está confirmado. */
+/** Correo de "pedido recibido". Pago en efectivo: al crear el pedido. PayPal: cuando el pago está confirmado. */
 export async function sendOrderConfirmation(orderId) {
   try {
     const db = getAdminDb();

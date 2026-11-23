@@ -2,7 +2,8 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, ArrowUpRight } from 'lucide-react';
-import { getAllProducts } from '@/lib/catalog.server';
+import { getAllProducts, catalogUnavailable } from '@/lib/catalog.server';
+import CatalogDown from '@/components/ui/CatalogDown';
 import { DEPARTMENTS } from '@/lib/categories';
 import { eur } from '@/lib/format';
 import { SITE_CONFIG } from '@/site.config';
@@ -13,9 +14,11 @@ import Reveal from '@/components/ui/Reveal';
 import LiveGrid from '@/components/ui/LiveGrid';
 
 export const dynamic = 'force-dynamic';
+export const metadata = { alternates: { canonical: '/' } };
 
 export default async function HomePage() {
   const all = await getAllProducts();
+  if (!all.length && catalogUnavailable()) return <CatalogDown />;
   const featured = all.filter((p) => p.featured && p.images[0]);
   const hero = (featured.length >= 3 ? featured : all.filter((p) => p.images[0])).slice(0, 6);
   const latest = [...all].sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))).slice(0, 8);
@@ -113,7 +116,7 @@ export default async function HomePage() {
         <ol className="mt-10 grid gap-4 md:grid-cols-3">
           {[
             ['1', 'Elige tu talla', 'En cada prenda ves cuántas unidades quedan de cada talla, en tiempo real.'],
-            ['2', 'Paga como prefieras', meetup.enabled ? 'Con PayPal, o en mano si quedamos en persona.' : 'Con PayPal, en un paso.'],
+            ['2', 'Paga como prefieras', meetup.enabled ? 'Con PayPal, o en efectivo si quedamos en persona.' : 'Con PayPal, en un paso.'],
             ['3', 'Recíbelo o quedamos', `${delivery.enabled ? `En casa en 2-4 días laborables por ${eur(delivery.cost)}` : ''}${delivery.enabled && meetup.enabled ? ', o ' : ''}${meetup.enabled ? `quedamos en ${SITE_CONFIG.brand.city} sin coste` : ''}.`],
           ].map(([n, t, d], i) => (
             <Reveal as="li" key={n} delay={i * 90} className="rounded-lg border border-line bg-paper p-7">

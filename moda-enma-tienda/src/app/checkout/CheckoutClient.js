@@ -1,6 +1,6 @@
 'use client';
 // moda-enma-tienda/src/app/checkout/CheckoutClient.js
-import { useMemo, useRef, useState } from 'react';
+import { cloneElement, isValidElement, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -62,19 +62,24 @@ export default function CheckoutClient() {
     return Object.keys(e).length === 0;
   };
 
+  const NET_ERR = 'No hay conexión con la tienda. Comprueba tu internet e inténtalo de nuevo; no se ha cobrado nada.';
   const createOrder = async () => {
-    const res = await fetch('/api/orders', {
+    if (orderRef.current) await release(); // un reintento nunca deja una reserva anterior colgada
+    let res;
+    try {
+      res = await fetch('/api/orders', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         fullName: f.fullName, email: f.email, phone: f.phone, address: f.address, city: f.city, postalCode: f.postalCode, notes: f.notes,
         shippingMethod: shipping, paymentMethod: payment, termsAccepted: f.terms === true, honeypot: f.honeypot,
         items: buyable.map((i) => ({ productId: i.productId, size: i.size, quantity: i.quantity })),
       }),
-    });
+      });
+    } catch { throw new Error(NET_ERR); }
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       if (data.fields) setErrors(data.fields);
-      throw new Error(data.error || 'No hemos podido procesar el pedido');
+      throw new Error(data.error || (res.status >= 500 ? 'La tienda tiene un problema ahora mismo. Inténtalo de nuevo en un minuto.' : 'No hemos podido procesar el pedido'));
     }
     orderRef.current = data;
     return data;
@@ -165,8 +170,8 @@ export default function CheckoutClient() {
                 </label>
               ))}
             </div>
-            {payment === 'cash' && <p className="mt-3 text-[14px] text-ink-soft">Te escribiremos para quedar. Pagas {eur(total)} en mano cuando lo recibas.</p>}
-            {paypalBlocked && <p className="mt-3 rounded-md bg-warn/10 px-4 py-3 text-[14px] font-medium text-ink" role="status">PayPal estará disponible muy pronto. Mientras tanto puedes quedar en persona y pagar en mano.</p>}
+            {payment === 'cash' && <p className="mt-3 text-[14px] text-ink-soft">Te escribiremos para quedar. Pagas {eur(total)} en efectivo cuando nos veamos.</p>}
+            {paypalBlocked && <p className="mt-3 rounded-md bg-warn/10 px-4 py-3 text-[14px] font-medium text-ink" role="status">PayPal estará disponible muy pronto. Mientras tanto puedes quedar en persona y pagar en efectivo.</p>}
           </fieldset>
 
           <div>
@@ -211,12 +216,26 @@ export default function CheckoutClient() {
                   }}
                   onApprove={async (data) => {
                     const o = orderRef.current;
-                    const res = await fetch('/api/paypal/capture', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderId: o.orderId, accessToken: o.accessToken, paypalOrderId: data.orderID }) });
-                    if (!res.ok) { const j = await res.json().catch(() => ({})); toast.error(j.error || 'No hemos podido confirmar el pago'); await release(); return; }
+                    let res;
+                    try {
+                      res = await fetch('/api/paypal/capture', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderId: o.orderId, accessToken: o.accessToken, paypalOrderId: data.orderID }) });
+                    } catch {
+                      // Sin respuesta: el cobro pudo hacerse. NO cancelamos; la página del pedido muestra el estado real.
+                      toast.warning('No hemos recibido la confirmación. Mira el estado de tu pedido; si PayPal te ha cobrado, tu pedido está registrado.', { duration: 10000 });
+                      finish(o);
+                      return;
+                    }
+                    if (!res.ok) {
+                      const j = await res.json().catch(() => ({}));
+                      toast.error(j.error || 'No hemos podido confirmar el pago. No se ha cobrado nada.', { duration: 8000 });
+                      if (res.status !== 409) await release();
+                      orderRef.current = null;
+                      return;
+                    }
                     finish(o);
                   }}
                   onCancel={async () => { await release(); toast('Pago cancelado. No se ha cobrado nada.'); }}
-                  onError={async () => { await release(); }}
+                  onError={async () => { await release(); toast.error('PayPal ha tenido un problema. No se ha cobrado nada: puedes intentarlo de nuevo o elegir quedar en persona.', { duration: 8000 }); }}
                 />
               </PayPalScriptProvider>
             ) : (
@@ -236,8 +255,8 @@ function Field({ id, label, error, className = '', children }) {
   return (
     <div className={className}>
       <label htmlFor={`f-${id}`} className="label">{label}</label>
-      {children}
-      {error && <p className="err" id={`e-${id}`}>{error}</p>}
+      {isValidElement(children) ? cloneElement(children, error ? { 'aria-invalid': true, 'aria-describedby': `e-${id}` } : {}) : children}
+      {error && <p className="err" id={`e-${id}`} role="alert">{error}</p>}
     </div>
   );
 }

@@ -15,9 +15,16 @@ export const paymentBadge = (o) => {
   if (s === 'refunded') return ['Reembolsado', 'b-bad'];
   if (s === 'failed' || s === 'cancelled') return ['Pago cancelado', 'b-bad'];
   if (m === 'paypal') return ['PayPal · pagado', 'b-ok'];
-  return s === 'paid' ? ['Cobrado en mano', 'b-ok'] : ['Cobrar en mano', 'b-warn'];
+  return s === 'paid' ? ['Cobrado en efectivo', 'b-ok'] : ['Cobrar en efectivo', 'b-warn'];
 };
 const statusBadge = { Pendiente: 'b-pink', Preparando: 'b-blue', Enviado: 'b-blue', Entregado: 'b-ok', Cancelado: 'b-bad' };
+const STATUS_HELP = {
+  Pendiente: 'Pedido nuevo. Si lo vas a preparar, pulsa el botón de abajo: el cliente recibe un correo.',
+  Preparando: 'Lo estás preparando. Al marcarlo como enviado (o listo) el cliente recibe un correo.',
+  Enviado: 'En camino o pendiente de quedada. Al marcarlo como entregado se cierra el pedido.',
+  Entregado: 'Pedido cerrado.',
+  Cancelado: 'Cancelado: el stock ha vuelto a la tienda.',
+};
 const NEXT = { Pendiente: ['Preparando', 'Empezar a prepararlo'], Preparando: ['Enviado', 'Marcar como enviado'], Enviado: ['Entregado', 'Marcar como entregado'] };
 
 function OrderSheet({ orderId, onClose }) {
@@ -85,11 +92,12 @@ function OrderSheet({ orderId, onClose }) {
       <SheetBody>
         <div className="row wrap"><span className={`badge ${statusBadge[order.status]}`}>{order.status}</span><span className={`badge ${payCls}`}>{payLabel}</span><span className="badge">{order.source === 'web' ? '🌐 Web' : '✍️ Venta manual'}</span><span className="muted small">{fmtDateTime(order.createdAt)}</span></div>
 
-        {order.paymentStatus === 'awaiting_payment' && <div className="alert">El cliente empezó a pagar con PayPal pero no ha terminado. El stock está reservado; si pasa mucho rato, cancela el pedido para liberarlo.</div>}
+        {order.paymentStatus === 'awaiting_payment' && <div className="alert">El cliente empezó a pagar con PayPal pero no ha terminado. La prenda está reservada y se libera sola a los 30 minutos. Si prefieres, cancela el pedido para liberarla ya.</div>}
 
         {order.status !== 'Cancelado' && (
           <div className="stack">
             <div className="status-flow">{flow.map((s, i) => <div key={s} className={i <= idx ? 'on' : ''}>{s}</div>)}</div>
+            <p className="hint">{STATUS_HELP[order.status]}</p>
             {next && <button className="btn btn-dark btn-lg btn-block" disabled={busy} onClick={() => changeStatus(next[0], `Ahora está: ${next[0]}`)}><Check aria-hidden />{next[1]}</button>}
             {order.paymentMethod === 'cash' && order.paymentStatus === 'pending' && <button className="btn btn-ok btn-block" disabled={busy} onClick={() => run(() => actions.markPaid(order.id), 'Cobro registrado')}>💶 Ya me han pagado {eur(order.total)}</button>}
           </div>
@@ -113,7 +121,15 @@ function OrderSheet({ orderId, onClose }) {
           </label>
         )}
 
-        {order.notifications?.confirmationError && <div className="alert">El correo de confirmación no se pudo enviar a este cliente ({order.notifications.confirmationError}). Escríbele por WhatsApp.</div>}
+        {order.notifications?.confirmationError && !order.notifications?.confirmationSentAt && (
+          <div className="alert bad">
+            <b>Correo no enviado.</b> La confirmación no llegó a este cliente ({order.notifications.confirmationError}).
+            <div className="row wrap" style={{ marginTop: 8 }}>
+              {canEmail && <button className="btn" disabled={busy} onClick={() => run(async () => { const r = await actions.retryConfirmationEmail(order.id); if (r.sent) toast.success('Correo enviado'); else toast.error(r.error || 'Sigue sin poder enviarse. Escríbele por WhatsApp.'); })}>Reintentar envío</button>}
+              <span className="muted small">O avísale por WhatsApp aquí abajo.</span>
+            </div>
+          </div>
+        )}
 
         {order.clientPhone && (
           <section className="wa-box">
@@ -221,7 +237,7 @@ function NewSaleSheet({ onClose, onCreated }) {
           <h2>3 · Entrega y pago</h2>
           <div className="chips">{Object.entries(SITE_CONFIG.shipping.methods).map(([k, m]) => <button key={k} className="chip" aria-pressed={shipping === k} onClick={() => { setShipping(k); if (k === 'delivery') setPayment('paypal'); }}>{m.label}</button>)}</div>
           {shipping === 'delivery' && <Field label="Dirección de envío"><input className="input" value={client.address} onChange={(e) => setClient({ ...client, address: e.target.value })} /></Field>}
-          <div className="chips"><button className="chip" aria-pressed={payment === 'cash'} onClick={() => setPayment('cash')}>💶 En mano</button><button className="chip" aria-pressed={payment === 'paypal'} onClick={() => setPayment('paypal')}>PayPal (ya pagado)</button></div>
+          <div className="chips"><button className="chip" aria-pressed={payment === 'cash'} onClick={() => setPayment('cash')}>💶 En efectivo</button><button className="chip" aria-pressed={payment === 'paypal'} onClick={() => setPayment('paypal')}>PayPal (ya pagado)</button></div>
           <div className="chips">{['Entregado', 'Pendiente'].map((s) => <button key={s} className="chip" aria-pressed={status === s} onClick={() => setStatus(s)}>{s === 'Entregado' ? 'Ya entregado' : 'Aún por entregar'}</button>)}</div>
           <Field label="Notas"><input className="input" value={notes} onChange={(e) => setNotes(e.target.value)} /></Field>
         </div>
@@ -262,7 +278,7 @@ export default function Pedidos({ intent, clearIntent }) {
         <div className="list">{list.map((o, i) => { const [pl, pc] = paymentBadge(o); return (
           <button key={o.id} className="item rise" style={{ '--i': Math.min(i, 8) }} onClick={() => setOpen(o.id)}>
             <span className="avatar">{(o.clientName || '?')[0].toUpperCase()}</span>
-            <span className="grow"><span className="title" style={{ display: 'block' }}>{o.clientName}</span><span className="muted small">{o.id} · {(() => { const n = o.items.reduce((s, l) => s + l.quantity, 0); return `${n} ${n === 1 ? 'prenda' : 'prendas'}`; })()} · {timeAgo(o.createdAt)}</span><span className="row wrap" style={{ gap: 6, marginTop: 6 }}><span className={`badge ${statusBadge[o.status]}`}>{o.status}</span><span className={`badge ${pc}`}>{pl}</span></span></span>
+            <span className="grow"><span className="title" style={{ display: 'block' }}>{o.clientName}</span><span className="muted small">{o.id} · {(() => { const n = o.items.reduce((s, l) => s + l.quantity, 0); return `${n} ${n === 1 ? 'prenda' : 'prendas'}`; })()} · {timeAgo(o.createdAt)}</span><span className="row wrap" style={{ gap: 6, marginTop: 6 }}><span className={`badge ${statusBadge[o.status]}`}>{o.status}</span><span className={`badge ${pc}`}>{pl}</span>{o.notifications?.confirmationError && !o.notifications?.confirmationSentAt && <span className="badge b-bad">Correo no enviado</span>}</span></span>
             <b className="num">{eur(o.total)}</b>
           </button>); })}</div>
       )}

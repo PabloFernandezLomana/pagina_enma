@@ -58,7 +58,7 @@ export default function Footer() {
       <div className="border-t border-cream/15">
         <div className="wrap flex flex-col gap-2 py-6 text-[13px] text-cream/65 sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} {brand.name}. {brand.city}, {brand.country}.</p>
-          <p>Pago con PayPal o en mano · {SITE_CONFIG.legal.taxIncludedText.toLowerCase()}</p>
+          <p>Pago con PayPal o en efectivo · {SITE_CONFIG.legal.taxIncludedText.toLowerCase()}</p>
         </div>
       </div>
     </footer>

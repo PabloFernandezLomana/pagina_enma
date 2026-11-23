@@ -7,6 +7,7 @@ import { rateLimit, clientIp } from '@/lib/rateLimit';
 import { getAdminDb } from '@/lib/firebaseAdmin';
 import { releaseOrder } from '@/lib/orders.server';
 import { sendOrderConfirmation } from '@/lib/notify.server';
+import { runInBackground } from '@/lib/background.server';
 
 export const runtime = 'nodejs';
 
@@ -53,11 +54,14 @@ export async function POST(request) {
     for (const i of parsed.error.issues) fields[i.path.join('.') || 'form'] = i.message;
     return NextResponse.json({ error: Object.values(fields)[0] || 'Revisa los datos', fields }, { status: 400 });
   }
+  if (!rateLimit(`order-email:${parsed.data.email.toLowerCase()}`, 5, 30 * 60 * 1000)) {
+    return NextResponse.json({ error: 'Demasiados intentos con este correo. Prueba de nuevo en unos minutos.' }, { status: 429 });
+  }
   if (parsed.data.honeypot) return NextResponse.json({ error: 'Petición rechazada.' }, { status: 400 });
 
   try {
     if (parsed.data.paymentMethod === 'paypal' && !paypalConfigured()) {
-      return NextResponse.json({ error: 'PayPal aún no está disponible. Elige pago en mano o inténtalo más tarde.' }, { status: 503 });
+      return NextResponse.json({ error: 'PayPal aún no está disponible. Elige quedar en persona (efectivo) o inténtalo más tarde.' }, { status: 503 });
     }
     const order = await createOrder(parsed.data);
     let paypalOrderId = null;
@@ -71,8 +75,8 @@ export async function POST(request) {
         return NextResponse.json({ error: 'No hemos podido iniciar el pago con PayPal. Inténtalo de nuevo.' }, { status: 502 });
       }
     }
-    // Pago en mano: el pedido ya es firme, avisamos al cliente. (PayPal: se avisa cuando el pago se confirma.)
-    if (!order.isPaypal && !order.demo) await sendOrderConfirmation(order.orderId);
+    // Pago en efectivo: el pedido ya es firme, avisamos al cliente. (PayPal: se avisa cuando el pago se confirma.)
+    if (!order.isPaypal && !order.demo) await runInBackground(sendOrderConfirmation(order.orderId));
     return NextResponse.json({
       success: true,
       demo: order.demo,

@@ -44,7 +44,7 @@ export const SITE_CONFIG = {
       meetup: {
         enabled: true,
         label: 'Quedar en persona (Málaga)',
-        description: 'Quedamos en Málaga y pagas en mano o por PayPal.',
+        description: 'Quedamos en Málaga y pagas en efectivo o por PayPal.',
         cost: 0,
         payments: ['cash', 'paypal'],
       },
@@ -54,7 +54,7 @@ export const SITE_CONFIG = {
 
   payments: {
     // Los dos únicos métodos del proyecto.
-    labels: { paypal: 'PayPal', cash: 'Pago en mano' },
+    labels: { paypal: 'PayPal', cash: 'Pago en efectivo' },
   },
 
   legal: {
@@ -92,10 +92,14 @@ export function whatsappLink(text = '') {
   return `https://wa.me/${n}${text ? `?text=${encodeURIComponent(text)}` : ''}`;
 }
 
+/** Dirección pública de la tienda, SIEMPRE sin barra final (evita enlaces con "//"). */
+export const DEFAULT_SITE_URL = 'https://modaenma-tienda.tiendaenma.workers.dev';
 export function siteUrl() {
-  return hasValue(SITE_CONFIG.brand.domain)
-    ? SITE_CONFIG.brand.domain.replace(/\/$/, '')
-    : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+  const clean = (u) => String(u || '').trim().replace(/\/+$/, '');
+  if (hasValue(SITE_CONFIG.brand.domain)) return clean(SITE_CONFIG.brand.domain);
+  const env = clean(process.env.NEXT_PUBLIC_SITE_URL);
+  if (env) return env;
+  return process.env.NODE_ENV === 'production' ? DEFAULT_SITE_URL : 'http://localhost:3000';
 }
 
 export default SITE_CONFIG;

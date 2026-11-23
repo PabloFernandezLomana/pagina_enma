@@ -17,6 +17,8 @@ function ProductSheet({ product, onClose }) {
   const isNew = !product?.id;
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [progress, setProgress] = useState('');
+  const [preparing, setPreparing] = useState(false);
   const [form, setForm] = useState(() => product ? { ...blank(), ...product, salePrice: product.salePrice, costPrice: product.costPrice, images: (product.images || []).map((url) => ({ url })) } : blank());
   const [customSize, setCustomSize] = useState('');
   const set = (patch) => setForm((f) => ({ ...f, ...patch }));
@@ -35,14 +37,19 @@ function ProductSheet({ product, onClose }) {
   const allValid = valid.photos && valid.data && valid.price;
 
   const addFiles = async (files) => {
-    const list = [...files].slice(0, 10 - form.images.length);
+    const all = [...files];
+    if (all.length > 10 - form.images.length) toast.info('Solo caben 10 fotos: he cogido las primeras.');
+    const list = all.slice(0, 10 - form.images.length);
     const done = [];
+    setPreparing(true);
     for (const file of list) {
-      if (!file.type.startsWith('image/')) continue;
+      if (!file.type.startsWith('image/')) { toast.info(`${file.name} no es una imagen`); continue; }
+      if (file.size > 30 * 1024 * 1024) { toast.error(`${file.name} pesa demasiado (máx. 30 MB)`); continue; }
       try { const blob = await compressImage(file, backend.mode === 'demo' ? { max: 700, quality: 0.7 } : {}); done.push({ blob, preview: URL.createObjectURL(blob) }); }
       catch { toast.error(`No se pudo leer ${file.name}`); }
     }
     setForm((f) => ({ ...f, images: [...f.images, ...done] }));
+    setPreparing(false);
   };
   const moveImg = (i) => setForm((f) => { const a = [...f.images]; [a[i - 1], a[i]] = [a[i], a[i - 1]]; return { ...f, images: a }; });
   const removeImg = (i) => setForm((f) => ({ ...f, images: f.images.filter((_, k) => k !== i) }));
@@ -62,10 +69,23 @@ function ProductSheet({ product, onClose }) {
     try {
       const id = product?.id || `prod-${Date.now().toString(36)}`;
       const urls = [];
+      const pending = form.images.filter((x) => !x.url).length;
+      let n = 0;
       for (let i = 0; i < form.images.length; i++) {
         const img = form.images[i];
-        urls.push(img.url || (await backend.upload(img.blob, `products/${id}/${Date.now()}-${i}.webp`)));
+        if (img.url) { urls.push(img.url); continue; }
+        n += 1;
+        setProgress(`Subiendo foto ${n} de ${pending}…`);
+        let url;
+        for (let attempt = 1; ; attempt++) {
+          try { url = await backend.upload(img.blob, `products/${id}/${Date.now()}-${i}.webp`); break; }
+          catch (e) { if (attempt >= 2) throw e; }
+        }
+        urls.push(url);
+        // Guardamos la URL: si algo falla después, al reintentar no se vuelve a subir esta foto.
+        setForm((f) => ({ ...f, images: f.images.map((x) => (x === img ? { ...x, url } : x)) }));
       }
+      setProgress('Guardando…');
       const d = dept(form.department);
       await actions.saveProduct({
         ...form, id, name: form.name.trim(), description: form.description.trim(), salePrice: sale, costPrice: cost, images: urls,
@@ -78,8 +98,8 @@ function ProductSheet({ product, onClose }) {
       onClose();
     } catch (err) {
       console.error(err);
-      toast.error(err instanceof BusinessError ? err.message : 'No se pudo guardar. Revisa tu conexión y vuelve a intentarlo.');
-      setSaving(false);
+      toast.error(err instanceof BusinessError ? err.message : `No se pudo guardar${err?.message ? ` (${err.message})` : ''}. Revisa tu conexión y vuelve a intentarlo: las fotos ya subidas no se repiten.`, { duration: 8000 });
+      setSaving(false); setProgress('');
     }
   };
 
@@ -93,7 +113,7 @@ function ProductSheet({ product, onClose }) {
     <Sheet title={isNew ? 'Nuevo producto' : 'Editar producto'} onClose={onClose} wide
       footer={<>
         {step > 0 && <button className="btn" onClick={() => setStep(step - 1)}><ArrowLeft aria-hidden />Atrás</button>}
-        {step < 2 ? <button className="btn btn-dark" onClick={() => setStep(step + 1)}>Siguiente</button> : <button className="btn btn-primary" disabled={!allValid || saving} onClick={save}>{saving ? 'Guardando…' : isNew ? 'Publicar producto' : 'Guardar cambios'}</button>}
+        {step < 2 ? <button className="btn btn-dark" onClick={() => setStep(step + 1)}>Siguiente</button> : <button className="btn btn-primary" disabled={!allValid || saving} onClick={save}>{saving ? (progress || 'Guardando…') : isNew ? 'Publicar producto' : 'Guardar cambios'}</button>}
       </>}>
       <div className="steps" role="tablist">
         {stepsLabels.map((l, i) => <button key={l} className={`step${i < step && Object.values(valid)[i] ? ' done' : ''}`} aria-current={i === step ? 'step' : undefined} onClick={() => setStep(i)}>{l}</button>)}
@@ -113,7 +133,7 @@ function ProductSheet({ product, onClose }) {
               ))}
               {form.images.length < 10 && (
                 <label className="addphoto" style={{ cursor: 'pointer' }}>
-                  <Camera aria-hidden /><span>Añadir fotos</span>
+                  <Camera aria-hidden /><span>{preparing ? 'Preparando…' : 'Añadir fotos'}</span>
                   <input type="file" accept="image/*" multiple hidden onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
                 </label>
               )}

@@ -5,7 +5,7 @@ export const DEFAULT_TEMPLATES = {
   Enviado: '¡Buenas noticias, {nombre}! 📦 Tu pedido {pedido} ya va de camino. Si tienes cualquier duda, escríbeme por aquí.',
   Entregado: '¡Hola {nombre}! 💛 Tu pedido {pedido} ya está entregado. Gracias por confiar en ModaEnma, ¡espero que te encante!',
   Cancelado: 'Hola {nombre}. Tu pedido {pedido} se ha cancelado. Si ha sido un error o quieres hacer otro, escríbeme y lo arreglamos.',
-  Cobro: 'Hola {nombre} 🌷 Te recuerdo que queda pendiente el pago de tu pedido {pedido} ({total}). Puedes pagarme en mano cuando quedemos. ¡Gracias!',
+  Cobro: 'Hola {nombre} 🌷 Te recuerdo que queda pendiente el pago de tu pedido {pedido} ({total}). Puedes pagarme en efectivo cuando quedemos. ¡Gracias!',
 };
 export const TEMPLATE_LABELS = { Pendiente: 'Pedido recibido', Preparando: 'Preparando el pedido', Enviado: 'Pedido enviado', Entregado: 'Pedido entregado', Cancelado: 'Pedido cancelado', Cobro: 'Recordar el pago' };
 

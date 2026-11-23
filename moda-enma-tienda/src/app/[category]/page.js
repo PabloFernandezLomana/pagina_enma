@@ -1,6 +1,7 @@
 // moda-enma-tienda/src/app/[category]/page.js
 import { notFound } from 'next/navigation';
-import { getProducts } from '@/lib/catalog.server';
+import { getProducts, catalogUnavailable } from '@/lib/catalog.server';
+import CatalogDown from '@/components/ui/CatalogDown';
 import { DEPARTMENTS, getDepartment } from '@/lib/categories';
 import LiveGrid from '@/components/ui/LiveGrid';
 
@@ -17,6 +18,7 @@ export default async function DepartmentPage({ params }) {
   const dep = getDepartment(category);
   if (!dep) notFound();
   const products = await getProducts({ department: dep.id });
+  if (!products.length && catalogUnavailable()) return <CatalogDown />;
 
   return (
     <>
