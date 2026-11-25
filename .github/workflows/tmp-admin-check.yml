@@ -14,9 +14,8 @@ jobs:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MODA_ENMA }}
       - run: |
           mkdir /tmp/w && cd /tmp/w && npm init -y >/dev/null && npm i firebase-admin@12 playwright google-auth-library >/dev/null 2>&1
-          npx playwright install --with-deps chromium >/dev/null 2>&1
-          cp "$GITHUB_WORKSPACE"/.github/scripts/final.mjs "$GITHUB_WORKSPACE"/.github/scripts/box.json /tmp/w/
-          node /tmp/w/final.mjs
+          cp "$GITHUB_WORKSPACE"/.github/scripts/tpl.mjs /tmp/w/
+          node /tmp/w/tpl.mjs
         env:
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
           VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
