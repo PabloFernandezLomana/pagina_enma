@@ -29,7 +29,7 @@ export default function Login({ backend }) {
   };
   const forgot = async () => {
     if (!email.trim()) return toast.info('Escribe primero tu correo');
-    try { await backend.auth.reset(email.trim().toLowerCase()); toast.success('Te hemos enviado un correo para cambiar la contraseña'); }
+    try { await backend.auth.reset(email.trim().toLowerCase()); toast.success('Si ese correo tiene cuenta, te llegará un mensaje para cambiar la contraseña. Mira también en Spam o Promociones (lo envía noreply@moda-enma.firebaseapp.com).', { duration: 12000 }); }
     catch (err) { toast.error(err?.code === 'auth/too-many-requests' ? 'Demasiados intentos. Espera unos minutos.' : 'No hemos podido enviarlo. Revisa el correo.'); }
   };
 

@@ -1,5 +1,5 @@
 // pagina_inma/src/views/Productos.jsx
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Search, Plus, Minus, Camera, X, ArrowLeft, Trash2, ChevronLeft } from 'lucide-react';
 import { useData, BusinessError } from '../lib/data';
@@ -21,6 +21,7 @@ function ProductSheet({ product, onClose }) {
   const [preparing, setPreparing] = useState(false);
   const [form, setForm] = useState(() => product ? { ...blank(), ...product, salePrice: product.salePrice, costPrice: product.costPrice, images: (product.images || []).map((url) => ({ url })) } : blank());
   const [customSize, setCustomSize] = useState('');
+  const baseVariants = useRef(product?.variants ? product.variants.map((v) => ({ size: v.size, stock: Number(v.stock) || 0 })) : null);
   const set = (patch) => setForm((f) => ({ ...f, ...patch }));
 
   useEffect(() => () => form.images.forEach((i) => i.preview && URL.revokeObjectURL(i.preview)), []); // eslint-disable-line
@@ -92,7 +93,7 @@ function ProductSheet({ product, onClose }) {
         sku: form.sku.trim() || `${d.id.slice(0, 3).toUpperCase()}-${id.slice(-5).toUpperCase()}`,
         variants: form.variants.map((v) => ({ size: v.size, stock: Number(v.stock) || 0 })),
         demo: undefined, // al editar un producto de prueba deja de ser "de prueba"
-      });
+      }, isNew ? null : baseVariants.current);
       toast.success(isNew ? '¡Producto subido! Ya se ve en la tienda 🎉' : 'Cambios guardados');
       if (isNew) confetti();
       onClose();

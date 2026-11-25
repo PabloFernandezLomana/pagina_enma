@@ -45,14 +45,26 @@ export function DataProvider({ backend, children }) {
   }, [raw.templates]);
 
   /* ---------------------------- Productos ---------------------------- */
-  const saveProduct = useCallback(async (p) => {
+  /** Guarda un producto. Al EDITAR, el stock de las tallas que no se han tocado se toma del dato actual de la base
+   *  (no del que había al abrir el formulario): así, si entra una venta mientras se edita, no se pisa. */
+  const saveProduct = useCallback(async (p, baseVariants = null) => {
     const id = p.id || `prod-${Date.now().toString(36)}`;
     const now = new Date().toISOString();
     const { costPrice, ...pub } = p;
-    await backend.batch([
-      ['set', 'products', id, { ...pub, id: undefined, salePrice: Number(p.salePrice) || 0, active: p.active ?? true, createdAt: p.createdAt || now, updatedAt: now }, false],
-      ['set', 'products_private', id, { costPrice: Number(costPrice) || 0 }, true],
-    ]);
+    await backend.transact(async (tx) => {
+      let variants = pub.variants;
+      const live = baseVariants ? await tx.get('products', id) : null;
+      if (live && Array.isArray(live.variants)) {
+        variants = (pub.variants || []).map((v) => {
+          const base = baseVariants.find((b) => String(b.size) === String(v.size));
+          const cur = live.variants.find((l) => String(l.size) === String(v.size));
+          // sin tocar en el formulario -> conservar el stock vivo
+          return base && cur && Number(base.stock) === Number(v.stock) ? { ...v, stock: Number(cur.stock) || 0 } : v;
+        });
+      }
+      tx.set('products', id, { ...pub, variants, id: undefined, salePrice: Number(p.salePrice) || 0, active: p.active ?? true, createdAt: p.createdAt || live?.createdAt || now, updatedAt: now }, false);
+      tx.set('products_private', id, { costPrice: Number(costPrice) || 0 }, true);
+    });
     return id;
   }, [backend]);
 
