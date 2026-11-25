@@ -8,16 +8,29 @@ export default function Login({ backend }) {
   const [pass, setPass] = useState('');
   const [busy, setBusy] = useState(false);
 
+  // Mensaje según la causa real (antes todo se mostraba como "contraseña incorrecta").
+  const reason = (err) => {
+    switch (err?.code) {
+      case 'auth/invalid-credential': case 'auth/wrong-password': case 'auth/user-not-found': case 'auth/invalid-login-credentials':
+        return 'Correo o contraseña incorrectos. Si no la recuerdas, pulsa «Olvidé mi contraseña».';
+      case 'auth/invalid-email': return 'El correo no parece válido. Revisa que no tenga errores.';
+      case 'auth/user-disabled': return 'Esta cuenta está desactivada. Habla con quien administra el panel.';
+      case 'auth/too-many-requests': return 'Demasiados intentos fallidos. Espera unos minutos o usa «Olvidé mi contraseña» para cambiarla.';
+      case 'auth/network-request-failed': return 'No hay conexión con internet. Inténtalo de nuevo.';
+      default: return `No se ha podido entrar${err?.code ? ` (${err.code})` : ''}. Inténtalo de nuevo.`;
+    }
+  };
+
   const submit = async (e) => {
     e.preventDefault();
     setBusy(true);
     try { await backend.auth.signIn(email.trim(), pass); }
-    catch { toast.error('Correo o contraseña incorrectos'); setBusy(false); }
+    catch (err) { toast.error(reason(err), { duration: 8000 }); setBusy(false); }
   };
   const forgot = async () => {
     if (!email.trim()) return toast.info('Escribe primero tu correo');
     try { await backend.auth.reset(email.trim()); toast.success('Te hemos enviado un correo para cambiar la contraseña'); }
-    catch { toast.error('No hemos podido enviarlo'); }
+    catch (err) { toast.error(err?.code === 'auth/too-many-requests' ? 'Demasiados intentos. Espera unos minutos.' : 'No hemos podido enviarlo. Revisa el correo.'); }
   };
 
   return (

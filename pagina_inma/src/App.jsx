@@ -108,6 +108,24 @@ function Shell({ user, onSignOut }) {
   );
 }
 
+function NoAccess({ user, backend, onUser }) {
+  const [busy, setBusy] = useState(false);
+  const retry = async () => {
+    setBusy(true);
+    try { const u = await backend.auth.refreshClaims(); if (u) onUser(u); } catch { /* sin conexión */ }
+    setBusy(false);
+  };
+  return (
+    <div className="login"><div className="login-card">
+      <div className="brand">Moda<b>Enma</b></div>
+      <h1>Esta cuenta aún no tiene acceso</h1>
+      <p className="muted">Has entrado como <b>{user.email}</b>, pero esta cuenta no tiene permiso de administrador. Pide que se lo den y pulsa «Comprobar de nuevo»: no hace falta volver a escribir la contraseña.</p>
+      <button className="btn btn-primary btn-block" disabled={busy} onClick={retry}>{busy ? 'Comprobando…' : 'Comprobar de nuevo'}</button>
+      <button className="btn btn-ghost btn-block" onClick={() => backend.auth.signOut()}>Cerrar sesión</button>
+    </div></div>
+  );
+}
+
 export default function App() {
   const backend = useMemo(() => getBackend(), []);
   const [user, setUser] = useState(undefined);
@@ -125,6 +143,8 @@ export default function App() {
   }
   if (user === undefined) return <div className="login"><div className="empty"><div className="big" aria-hidden>🌸</div></div></div>;
   if (!user) return <><Login backend={backend} /><Toaster position="top-center" richColors /></>;
+
+  if (!user.isAdmin) return <><NoAccess user={user} backend={backend} onUser={setUser} /><Toaster position="top-center" richColors /></>;
 
   return (
     <ConfirmProvider>

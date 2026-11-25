@@ -42,11 +42,23 @@ function makeFirebaseBackend() {
     mode: 'firebase',
     auth: {
       onChange(cb) {
+        const info = (user, token) => ({ email: user.email, uid: user.uid, isAdmin: token?.claims?.admin === true || token?.claims?.role === 'admin' });
         return onAuthStateChanged(auth, async (user) => {
           if (!user) return cb(null);
-          const token = await user.getIdTokenResult(true);
-          cb({ email: user.email, uid: user.uid, isAdmin: token.claims.admin === true || token.claims.role === 'admin' });
+          // Forzamos la lectura de los permisos más recientes. Si falla (mala cobertura, etc.) usamos
+          // los que ya tenía el navegador; así nunca se queda la pantalla cargando para siempre.
+          let token = null;
+          try { token = await user.getIdTokenResult(true); }
+          catch { try { token = await user.getIdTokenResult(); } catch { /* sin token: se tratará como sin permisos */ } }
+          cb(info(user, token));
         });
+      },
+      /** Vuelve a leer los permisos de la cuenta (por si se los acaban de dar) sin cerrar sesión. */
+      async refreshClaims() {
+        const user = auth.currentUser;
+        if (!user) return null;
+        const token = await user.getIdTokenResult(true);
+        return info(user, token);
       },
       signIn: (email, pass) => signInWithEmailAndPassword(auth, email, pass),
       signOut: () => signOut(auth),
@@ -119,6 +131,7 @@ function makeDemoBackend() {
       signIn: async () => authCb?.({ email: 'demo@modaenma.local', uid: 'demo', isAdmin: true }),
       signOut: async () => {},
       reset: async () => {},
+      refreshClaims: async () => ({ email: 'demo@modaenma.local', uid: 'demo', isAdmin: true }),
     },
     subscribe(col, cb) {
       listeners.set(col, [...(listeners.get(col) || []), cb]);
