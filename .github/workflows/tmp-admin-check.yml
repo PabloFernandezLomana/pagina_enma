@@ -13,7 +13,7 @@ jobs:
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MODA_ENMA }}
       - run: |
-          mkdir /tmp/w && cd /tmp/w && npm init -y >/dev/null && npm i firebase-admin@12 >/dev/null 2>&1
+          mkdir /tmp/w && cd /tmp/w && npm init -y >/dev/null && npm i firebase-admin@12 google-auth-library >/dev/null 2>&1
           cp "$GITHUB_WORKSPACE/.github/scripts/admin-check.mjs" /tmp/w/
           node /tmp/w/admin-check.mjs
         env:
