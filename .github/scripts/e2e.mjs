@@ -40,6 +40,9 @@ try {
   // 3) Login real en el panel desplegado, con navegador
   const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 390, height: 800 } }); const pg = await ctx.newPage();
   const errs = []; pg.on('pageerror', (e) => errs.push(String(e).slice(0, 120)));
+  pg.on('console', (m) => { if (['error', 'warning'].includes(m.type())) errs.push('console:' + m.text().slice(0, 160)); });
+  pg.on('requestfailed', (r) => errs.push('reqfail:' + r.url().split('?')[0].slice(0, 90) + ' ' + (r.failure()?.errorText || '')));
+  pg.on('response', (r) => { if (/identitytoolkit|securetoken|firestore/.test(r.url())) out['net ' + r.url().split('?')[0].split('/').slice(-1)[0] + ' ' + r.request().method()] = r.status(); });
   await pg.goto(SITE, { waitUntil: 'networkidle' });
   out.titulo = await pg.title();
   await pg.fill('input[type=email]', ' ' + email.toUpperCase() + ' '); // con espacios y mayúsculas, como desde el móvil
@@ -51,6 +54,7 @@ try {
     pg.waitForSelector('.Toastify, [data-sonner-toast]', { timeout: 20000 }).then(async () => 'error: ' + (await pg.locator('[data-sonner-toast]').first().innerText().catch(() => '?'))),
   ]).catch(() => 'timeout');
   out.loginWeb = result;
+  if (result === 'timeout') { out.textoPantalla = (await pg.locator('body').innerText()).replace(email, '<email>').slice(0, 400); out.url = pg.url(); }
   if (result === 'panel') {
     await pg.waitForFunction(() => !document.body.innerText.includes('Cargando tu tienda'), null, { timeout: 20000 }).catch(() => {});
     out.cargaDatos = (await pg.locator('main').innerText()).includes('Cargando') ? 'sigue cargando' : 'ok';
